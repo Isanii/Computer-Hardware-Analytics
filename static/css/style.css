@@ -15,3 +15,82 @@
 table td {
     vertical-align: middle;
 }
+
+
+/* Ảnh sản phẩm */
+
+.card-img-top {
+
+    height: 220px;
+
+    object-fit: contain;
+
+    padding: 10px;
+
+}
+
+/* Hover ảnh */
+
+.card-img-top:hover {
+
+    transform: scale(1.03);
+
+    transition: 0.2s ease;
+
+}
+
+/* Tiêu đề sản phẩm tối đa 2 dòng */
+
+.card-title {
+
+    min-height: 48px;
+
+    overflow: hidden;
+
+}
+
+/* Card sản phẩm */
+
+.product-card {
+
+    transition: 0.2s ease;
+
+}
+
+.product-card:hover {
+
+    transform: translateY(-3px);
+
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+
+}
+
+/* Ảnh sản phẩm */
+
+.card-img-top {
+
+    height: 220px;
+
+    object-fit: contain;
+
+    padding: 10px;
+
+    transition: 0.2s ease;
+
+}
+
+.card-img-top:hover {
+
+    transform: scale(1.03);
+
+}
+
+/* Tiêu đề sản phẩm */
+
+.card-title {
+
+    min-height: 55px;
+
+    overflow: hidden;
+
+}

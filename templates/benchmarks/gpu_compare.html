@@ -17,80 +17,110 @@ method="get"
 class="row g-3 mb-4"
 >
 
-    <div class="col-md-5">
+    <div class="col-md-5 position-relative">
 
-        <select
-        name="gpu1"
-        class="form-select"
+        <label class="form-label">
+
+            GPU thứ nhất
+
+        </label>
+
+        <input
+
+            type="text"
+
+            id="gpu1Search"
+
+            class="form-control"
+
+            placeholder="Nhập tên GPU..."
+
+            autocomplete="off"
+
+            value="{{ gpu1.name if gpu1 else '' }}"
+
         >
 
-            <option value="">
+        <input
 
-                Chọn GPU thứ nhất
+            type="hidden"
 
-            </option>
+            name="gpu1"
 
-            {% for gpu in gpu_list %}
+            id="gpu1Value"
 
-            <option
+            value="{{ gpu1.gpu_id if gpu1 else '' }}"
 
-            value="{{ gpu.gpu_id }}"
+        >
 
-            {% if gpu1 and gpu.id == gpu1.id %}
-            selected
-            {% endif %}
+        <div
 
-            >
+            id="gpu1Results"
 
-                {{ gpu.name }}
+            class="list-group position-absolute w-100"
 
-            </option>
+            style="z-index:1000;"
 
-            {% endfor %}
-
-        </select>
+        ></div>
 
     </div>
 
-    <div class="col-md-5">
+    <div class="col-md-5 position-relative">
 
-        <select
-        name="gpu2"
-        class="form-select"
+        <label class="form-label">
+
+            GPU thứ hai
+
+        </label>
+
+        <input
+
+            type="text"
+
+            id="gpu2Search"
+
+            class="form-control"
+
+            placeholder="Nhập tên GPU..."
+
+            autocomplete="off"
+
+            value="{{ gpu2.name if gpu2 else '' }}"
+
         >
 
-            <option value="">
+        <input
 
-                Chọn GPU thứ hai
+            type="hidden"
 
-            </option>
+            name="gpu2"
 
-            {% for gpu in gpu_list %}
+            id="gpu2Value"
 
-            <option
+            value="{{ gpu2.gpu_id if gpu2 else '' }}"
 
-            value="{{ gpu.gpu_id }}"
+        >
 
-            {% if gpu2 and gpu.id == gpu2.id %}
-            selected
-            {% endif %}
+        <div
 
-            >
+            id="gpu2Results"
 
-                {{ gpu.name }}
+            class="list-group position-absolute w-100"
 
-            </option>
+            style="z-index:1000;"
 
-            {% endfor %}
-
-        </select>
+        ></div>
 
     </div>
 
-    <div class="col-md-2">
+    <div class="col-md-2 d-flex align-items-end">
 
         <button
-        class="btn btn-primary w-100"
+
+            type="submit"
+
+            class="btn btn-primary w-100"
+
         >
 
             So sánh
@@ -142,44 +172,157 @@ class="row g-3 mb-4"
 
             <tbody>
 
+            {% set g3d_diff =
+            (
+            (
+            (gpu1.g3d_mark or 0)
+            -
+            (gpu2.g3d_mark or 0)
+            )
+            /
+            (gpu2.g3d_mark or 1)
+            *
+            100
+            )|round(1) %}
+
+            {% set g2d_diff =
+            (
+            (
+            (gpu1.g2d_mark or 0)
+            -
+            (gpu2.g2d_mark or 0)
+            )
+            /
+            (gpu2.g2d_mark or 1)
+            *
+            100
+            )|round(1) %}
+
+            {% set tdp_diff =
+            (
+            (
+            (gpu1.tdp or 0)
+            -
+            (gpu2.tdp or 0)
+            )
+            /
+            (gpu2.tdp or 1)
+            *
+            100
+            )|round(1) %}
             <tr>
 
                 <td>G3D Mark</td>
 
                 <td>
-                    {{ "{:,.0f}".format(gpu1.g3d_mark or 0) }}
+
+                <span class="
+                fw-bold
+                {% if (gpu1.g3d_mark or 0) > (gpu2.g3d_mark or 0) %}
+                text-success
+                {% elif (gpu1.g3d_mark or 0) < (gpu2.g3d_mark or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ "{:,.0f}".format(gpu1.g3d_mark or 0) }}
+
+                {% if g3d_diff > 0 %}
+                (+{{ g3d_diff }}%)
+                {% endif %}
+
+                </span>
+
                 </td>
 
                 <td>
-                    {{ "{:,.0f}".format(gpu2.g3d_mark or 0) }}
+
+                <span class="
+                fw-bold
+                {% if (gpu2.g3d_mark or 0) > (gpu1.g3d_mark or 0) %}
+                text-success
+                {% elif (gpu2.g3d_mark or 0) < (gpu1.g3d_mark or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ "{:,.0f}".format(gpu2.g3d_mark or 0) }}
+
+                {% if g3d_diff < 0 %}
+                (+{{ (-g3d_diff) }}%)
+                {% endif %}
+
+                </span>
+
                 </td>
 
-            </tr>
+                </tr>
 
             <tr>
 
                 <td>G2D Mark</td>
 
                 <td>
-                    {{ "{:,.0f}".format(gpu1.g2d_mark or 0) }}
+
+                <span class="
+                fw-bold
+                {% if (gpu1.g2d_mark or 0) > (gpu2.g2d_mark or 0) %}
+                text-success
+                {% elif (gpu1.g2d_mark or 0) < (gpu2.g2d_mark or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ "{:,.0f}".format(gpu1.g2d_mark or 0) }}
+
+                {% if g2d_diff > 0 %}
+                (+{{ g2d_diff }}%)
+                {% endif %}
+
+                </span>
+
                 </td>
 
                 <td>
-                    {{ "{:,.0f}".format(gpu2.g2d_mark or 0) }}
+
+                <span class="
+                fw-bold
+                {% if (gpu2.g2d_mark or 0) > (gpu1.g2d_mark or 0) %}
+                text-success
+                {% elif (gpu2.g2d_mark or 0) < (gpu1.g2d_mark or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ "{:,.0f}".format(gpu2.g2d_mark or 0) }}
+
+                {% if g2d_diff < 0 %}
+                (+{{ (-g2d_diff) }}%)
+                {% endif %}
+
+                </span>
+
                 </td>
 
-            </tr>
-
+                </tr>
             <tr>
 
-                <td>VRAM</td>
-
                 <td>
-                    {{ gpu1.memory_size }}
+
+                    VRAM
+
                 </td>
 
                 <td>
+
+                    {{ gpu1.memory_size }}
+
+                </td>
+
+                <td>
+
                     {{ gpu2.memory_size }}
+
                 </td>
 
             </tr>
@@ -189,46 +332,125 @@ class="row g-3 mb-4"
                 <td>Core Clock</td>
 
                 <td>
-                    {{ gpu1.core_clock }}
+
+                <span class="
+                fw-bold
+                {% if gpu1.core_clock > gpu2.core_clock %}
+                text-success
+                {% elif gpu1.core_clock < gpu2.core_clock %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ gpu1.core_clock }}
+
+                </span>
+
                 </td>
 
                 <td>
-                    {{ gpu2.core_clock }}
+
+                <span class="
+                fw-bold
+                {% if gpu2.core_clock > gpu1.core_clock %}
+                text-success
+                {% elif gpu2.core_clock < gpu1.core_clock %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ gpu2.core_clock }}
+
+                </span>
+
                 </td>
 
-            </tr>
+                </tr>
 
             <tr>
 
                 <td>Memory Clock</td>
 
                 <td>
-                    {{ gpu1.memory_clock }}
+
+                <span class="
+                fw-bold
+                {% if gpu1.memory_clock > gpu2.memory_clock %}
+                text-success
+                {% elif gpu1.memory_clock < gpu2.memory_clock %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ gpu1.memory_clock }}
+
+                </span>
+
                 </td>
 
                 <td>
-                    {{ gpu2.memory_clock }}
+
+                <span class="
+                fw-bold
+                {% if gpu2.memory_clock > gpu1.memory_clock %}
+                text-success
+                {% elif gpu2.memory_clock < gpu1.memory_clock %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ gpu2.memory_clock }}
+
+                </span>
+
                 </td>
 
-            </tr>
+                </tr>
 
             <tr>
 
                 <td>TDP</td>
 
                 <td>
-                    {{ gpu1.tdp }} W
+
+                <span class="
+                fw-bold
+                {% if (gpu1.tdp or 0) < (gpu2.tdp or 0) %}
+                text-success
+                {% elif (gpu1.tdp or 0) > (gpu2.tdp or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ gpu1.tdp }} W
+
+                </span>
+
                 </td>
 
                 <td>
-                    {{ gpu2.tdp }} W
+
+                <span class="
+                fw-bold
+                {% if (gpu2.tdp or 0) < (gpu1.tdp or 0) %}
+                text-success
+                {% elif (gpu2.tdp or 0) > (gpu1.tdp or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ gpu2.tdp }} W
+
+                </span>
+
                 </td>
 
-            </tr>
+                </tr>
 
             </tbody>
 
         </table>
+
         <hr class="my-4">
 
         <div class="card shadow-sm">
@@ -248,11 +470,13 @@ class="row g-3 mb-4"
             </div>
 
         </div>
+
     </div>
 
 </div>
 
 {% endif %}
+
 {% if gpu1 and gpu2 %}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -308,6 +532,12 @@ new Chart(
 
             ]
 
+        },
+
+        options: {
+
+            responsive: true
+
         }
 
     }
@@ -317,4 +547,117 @@ new Chart(
 </script>
 
 {% endif %}
+
+<script>
+
+function setupGpuSearch(
+
+    inputId,
+    resultId,
+    hiddenId
+
+){
+
+    const input =
+    document.getElementById(
+        inputId
+    );
+
+    const results =
+    document.getElementById(
+        resultId
+    );
+
+    const hidden =
+    document.getElementById(
+        hiddenId
+    );
+
+    input.addEventListener(
+
+        "input",
+
+        async () => {
+
+            const keyword =
+            input.value.trim();
+
+            if(
+                keyword.length < 2
+            ){
+
+                results.innerHTML = "";
+
+                return;
+
+            }
+
+            const response =
+            await fetch(
+
+                `/api/gpu-search?q=${encodeURIComponent(keyword)}`
+
+            );
+
+            const data =
+            await response.json();
+
+            results.innerHTML = "";
+
+            data.forEach(gpu => {
+
+                const item =
+                document.createElement(
+                    "a"
+                );
+
+                item.href = "#";
+
+                item.className =
+                "list-group-item list-group-item-action";
+
+                item.textContent =
+                gpu.name;
+
+                item.onclick = (e)=>{
+
+                    e.preventDefault();
+
+                    input.value =
+                    gpu.name;
+
+                    hidden.value =
+                    gpu.id;
+
+                    results.innerHTML =
+                    "";
+
+                };
+
+                results.appendChild(
+                    item
+                );
+
+            });
+
+        }
+
+    );
+
+}
+
+setupGpuSearch(
+    "gpu1Search",
+    "gpu1Results",
+    "gpu1Value"
+);
+
+setupGpuSearch(
+    "gpu2Search",
+    "gpu2Results",
+    "gpu2Value"
+);
+
+</script>
+
 {% endblock %}

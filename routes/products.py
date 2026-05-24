@@ -4,10 +4,13 @@ from flask import render_template
 from flask import request
 from flask import redirect
 from flask import url_for
-
+from flask import jsonify
 from services.product_service import (
     ProductService
 )
+
+import csv
+from flask import Response
 
 product_bp = Blueprint(
     "products",
@@ -169,7 +172,7 @@ def product_list():
     # Chặn page âm hoặc bằng 0
     if page < 1:
         page = 1
-    page_size = 20
+    page_size = 21
 
     products = (
 
@@ -312,4 +315,86 @@ def product_detail(
         images=images,
 
         specs=specs
+    )
+
+
+@product_bp.route(
+    "/api/search-suggest"
+)
+def search_suggest():
+
+    keyword = request.args.get(
+        "q",
+        ""
+    )
+
+    products = (
+
+        service.search_suggestions(
+            keyword
+        )
+
+    )
+
+    return jsonify([
+
+        {
+
+            "id":
+            p.product_id,
+
+            "title":
+            p.title,
+
+            "price":
+            p.price,
+
+            "image":
+            p.image_url
+
+        }
+
+        for p in products
+
+    ])
+
+@product_bp.route(
+    "/export/products"
+)
+def export_products():
+
+    products = service.get_all_products()
+
+    def generate():
+
+        # UTF-8 BOM cho Excel
+        yield '\ufeff'
+
+        yield "Tên,Hãng,Giá\n"
+
+        for p in products:
+
+            yield (
+
+                f'"{p.title}",'
+
+                f'"{p.vendor}",'
+
+                f'{p.price}\n'
+
+            )
+
+    return Response(
+
+        generate(),
+
+        mimetype="text/csv; charset=utf-8",
+
+        headers={
+
+            "Content-Disposition":
+            "attachment; filename=products.csv"
+
+        }
+
     )

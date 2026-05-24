@@ -211,41 +211,71 @@ shadow-sm
 
         <!-- Search -->
 
-        <form
+        <div class="position-relative">
 
+            <form
             class="d-flex"
-
             action="/search"
-
             method="get"
-
-        >
+            >
 
             <input
 
-                class="form-control me-2"
+            id="searchInput"
 
-                type="search"
+            class="form-control me-2"
 
-                name="q"
+            type="search"
 
-                placeholder="RTX 5070, Ryzen 7, SSD Samsung..."
+            name="q"
+
+            placeholder="RTX 5070, Ryzen 7, SSD Samsung..."
+
+            autocomplete="off"
 
             >
 
             <button
 
-                class="btn btn-outline-light"
+            class="btn btn-outline-light"
 
-                type="submit"
+            type="submit"
 
             >
 
-                <i class="fa-solid fa-magnifying-glass"></i>
+            <i class="fa-solid fa-magnifying-glass"></i>
 
             </button>
 
-        </form>
+            </form>
+
+           <div
+
+            id="searchResults"
+
+            class="
+            list-group
+            position-absolute
+            w-100
+            shadow
+            bg-white
+            "
+
+            style="
+            top:100%;
+            left:0;
+            z-index:9999;
+            max-height:500px;
+            overflow-y:auto;
+            "
+
+            ></div>
+
+            </div>
+
+                </div>
+
+        
 
     </div>
 
@@ -279,7 +309,139 @@ py-3
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
 
+const searchInput =
+document.getElementById(
+    "searchInput"
+);
+
+const searchResults =
+document.getElementById(
+    "searchResults"
+);
+
+if(searchInput){
+
+searchInput.addEventListener(
+
+    "input",
+
+    async ()=>{
+        console.log(searchInput.value);
+        const keyword =
+        searchInput.value.trim();
+
+        if(
+            keyword.length < 2
+        ){
+
+            searchResults.innerHTML =
+            "";
+
+            return;
+        }
+
+        const response =
+        await fetch(
+
+            `/api/search-suggest?q=${encodeURIComponent(keyword)}`
+
+        );
+
+        const data =
+        await response.json();
+
+        searchResults.innerHTML =
+        "";
+
+        data.forEach(item => {
+
+            const a =
+            document.createElement(
+                "a"
+            );
+
+            a.className =
+            "list-group-item list-group-item-action";
+
+            a.href =
+            `/products/view/${item.id}`;
+
+            a.innerHTML = `
+
+            <div class="d-flex align-items-center">
+
+                <img
+
+                    src="${item.image}"
+
+                    style="
+                    width:50px;
+                    height:50px;
+                    object-fit:contain;
+                    margin-right:10px;
+                    "
+
+                >
+
+                <div>
+
+                    <div>
+
+                        ${
+                            item.title.length > 60
+                            ? item.title.slice(0,60) + "..."
+                            : item.title
+                        }
+
+                    </div>
+
+                    <div
+                        class="text-danger fw-bold"
+                    >
+
+                        ${Number(
+                            item.price || 0
+                        ).toLocaleString(
+                            "vi-VN"
+                        )} VNĐ
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            `;
+
+            searchResults.appendChild(
+                a
+            );
+
+        });
+
+});
+}
+
+document.addEventListener(
+    "click",
+    function(e){
+
+        if(
+            !searchInput.contains(e.target)
+            &&
+            !searchResults.contains(e.target)
+        ){
+
+            searchResults.innerHTML = "";
+
+        }
+
+    }
+);
+
+</script>
 </body>
 
 </html>

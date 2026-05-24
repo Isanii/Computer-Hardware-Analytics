@@ -1,11 +1,13 @@
 from flask import Blueprint
 from flask import render_template
 from flask import request
-
+from flask import jsonify
 from services.benchmark_service import (
     BenchmarkService
 )
+import csv
 
+from flask import Response
 benchmark_bp = Blueprint(
     "benchmark",
     __name__
@@ -368,5 +370,160 @@ def gpu_detail(
         "benchmarks/gpu_detail.html",
 
         gpu=gpu
+
+    )
+
+
+@benchmark_bp.route(
+    "/api/cpu-search"
+)
+def cpu_search():
+
+    keyword = request.args.get(
+        "q",
+        ""
+    )
+
+    cpus = (
+
+        service.search_cpu(
+            keyword
+        )
+
+    )
+
+    return jsonify([
+
+        {
+
+            "id":
+            cpu.cpu_id,
+
+            "name":
+            cpu.name
+
+        }
+
+        for cpu in cpus
+
+    ])
+
+@benchmark_bp.route(
+    "/api/gpu-search"
+)
+def gpu_search():
+
+    keyword = request.args.get(
+        "q",
+        ""
+    )
+
+    gpus = service.search_gpu(
+        keyword
+    )
+
+    return jsonify([
+
+        {
+
+            "id":
+            gpu.gpu_id,
+
+            "name":
+            gpu.name
+
+        }
+
+        for gpu in gpus
+
+    ])
+
+
+@benchmark_bp.route(
+    "/export/cpu"
+)
+def export_cpu():
+
+    cpus = service.get_cpu_list()
+
+    def generate():
+
+    # UTF-8 BOM cho Excel
+        yield '\ufeff'
+
+        yield (
+            "Tên CPU,"
+            "CPU Mark,"
+            "Single Thread\n"
+        )
+
+        for cpu in cpus:
+
+            yield (
+
+                f'"{cpu.name}",'
+
+                f'{cpu.cpumark},'
+
+                f'{cpu.thread_mark}\n'
+
+            )
+
+    return Response(
+
+        generate(),
+
+        mimetype="text/csv; charset=utf-8",
+
+        headers={
+
+            "Content-Disposition":
+            "attachment; filename=cpu.csv"
+
+        }
+
+    )
+
+@benchmark_bp.route(
+    "/export/gpu"
+)
+def export_gpu():
+
+    gpus = service.get_gpu_list()
+
+    def generate():
+
+        yield '\ufeff'
+
+        yield (
+            "Tên GPU,"
+            "G3D Mark,"
+            "G2D Mark\n"
+        )
+
+        for gpu in gpus:
+
+            yield (
+
+                f'"{gpu.name}",'
+
+                f'{gpu.g3d_mark},'
+
+                f'{gpu.g2d_mark}\n'
+
+            )
+
+    return Response(
+
+        generate(),
+
+        mimetype="text/csv; charset=utf-8",
+
+        headers={
+
+            "Content-Disposition":
+            "attachment; filename=gpu.csv"
+
+        }
 
     )

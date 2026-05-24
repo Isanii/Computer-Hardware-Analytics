@@ -30,6 +30,7 @@ KTLTPTDL
 │   └── seed.py
 ├── dump_project_full_txt_output.py
 ├── project_dump.txt
+├── README.md
 ├── requirements.txt
 ├── reset_db.py
 ├── routes
@@ -46,7 +47,6 @@ KTLTPTDL
 │   ├── dashboard_service.py
 │   ├── home_service.py
 │   ├── product_service.py
-│   ├── recommendation_service.py
 │   └── search_service.py
 ├── static
 │   ├── css
@@ -610,6 +610,16 @@ FILE: project_dump.txt
 [LANGUAGE: ]
 
 
+
+
+====================================================================================================
+FILE: README.md
+====================================================================================================
+[LANGUAGE: markdown]
+
+#   C o m p u t e r - H a r d w a r e - A n a l y t i c s 
+ 
+ 
 
 
 ====================================================================================================
@@ -2111,11 +2121,13 @@ FILE: routes\benchmarks.py
 from flask import Blueprint
 from flask import render_template
 from flask import request
-
+from flask import jsonify
 from services.benchmark_service import (
     BenchmarkService
 )
+import csv
 
+from flask import Response
 benchmark_bp = Blueprint(
     "benchmark",
     __name__
@@ -2482,6 +2494,161 @@ def gpu_detail(
     )
 
 
+@benchmark_bp.route(
+    "/api/cpu-search"
+)
+def cpu_search():
+
+    keyword = request.args.get(
+        "q",
+        ""
+    )
+
+    cpus = (
+
+        service.search_cpu(
+            keyword
+        )
+
+    )
+
+    return jsonify([
+
+        {
+
+            "id":
+            cpu.cpu_id,
+
+            "name":
+            cpu.name
+
+        }
+
+        for cpu in cpus
+
+    ])
+
+@benchmark_bp.route(
+    "/api/gpu-search"
+)
+def gpu_search():
+
+    keyword = request.args.get(
+        "q",
+        ""
+    )
+
+    gpus = service.search_gpu(
+        keyword
+    )
+
+    return jsonify([
+
+        {
+
+            "id":
+            gpu.gpu_id,
+
+            "name":
+            gpu.name
+
+        }
+
+        for gpu in gpus
+
+    ])
+
+
+@benchmark_bp.route(
+    "/export/cpu"
+)
+def export_cpu():
+
+    cpus = service.get_cpu_list()
+
+    def generate():
+
+    # UTF-8 BOM cho Excel
+        yield '\ufeff'
+
+        yield (
+            "Tên CPU,"
+            "CPU Mark,"
+            "Single Thread\n"
+        )
+
+        for cpu in cpus:
+
+            yield (
+
+                f'"{cpu.name}",'
+
+                f'{cpu.cpumark},'
+
+                f'{cpu.thread_mark}\n'
+
+            )
+
+    return Response(
+
+        generate(),
+
+        mimetype="text/csv; charset=utf-8",
+
+        headers={
+
+            "Content-Disposition":
+            "attachment; filename=cpu.csv"
+
+        }
+
+    )
+
+@benchmark_bp.route(
+    "/export/gpu"
+)
+def export_gpu():
+
+    gpus = service.get_gpu_list()
+
+    def generate():
+
+        yield '\ufeff'
+
+        yield (
+            "Tên GPU,"
+            "G3D Mark,"
+            "G2D Mark\n"
+        )
+
+        for gpu in gpus:
+
+            yield (
+
+                f'"{gpu.name}",'
+
+                f'{gpu.g3d_mark},'
+
+                f'{gpu.g2d_mark}\n'
+
+            )
+
+    return Response(
+
+        generate(),
+
+        mimetype="text/csv; charset=utf-8",
+
+        headers={
+
+            "Content-Disposition":
+            "attachment; filename=gpu.csv"
+
+        }
+
+    )
+
+
 ====================================================================================================
 FILE: routes\dashboard.py
 ====================================================================================================
@@ -2612,10 +2779,13 @@ from flask import render_template
 from flask import request
 from flask import redirect
 from flask import url_for
-
+from flask import jsonify
 from services.product_service import (
     ProductService
 )
+
+import csv
+from flask import Response
 
 product_bp = Blueprint(
     "products",
@@ -2777,7 +2947,7 @@ def product_list():
     # Chặn page âm hoặc bằng 0
     if page < 1:
         page = 1
-    page_size = 20
+    page_size = 21
 
     products = (
 
@@ -2920,6 +3090,88 @@ def product_detail(
         images=images,
 
         specs=specs
+    )
+
+
+@product_bp.route(
+    "/api/search-suggest"
+)
+def search_suggest():
+
+    keyword = request.args.get(
+        "q",
+        ""
+    )
+
+    products = (
+
+        service.search_suggestions(
+            keyword
+        )
+
+    )
+
+    return jsonify([
+
+        {
+
+            "id":
+            p.product_id,
+
+            "title":
+            p.title,
+
+            "price":
+            p.price,
+
+            "image":
+            p.image_url
+
+        }
+
+        for p in products
+
+    ])
+
+@product_bp.route(
+    "/export/products"
+)
+def export_products():
+
+    products = service.get_all_products()
+
+    def generate():
+
+        # UTF-8 BOM cho Excel
+        yield '\ufeff'
+
+        yield "Tên,Hãng,Giá\n"
+
+        for p in products:
+
+            yield (
+
+                f'"{p.title}",'
+
+                f'"{p.vendor}",'
+
+                f'{p.price}\n'
+
+            )
+
+    return Response(
+
+        generate(),
+
+        mimetype="text/csv; charset=utf-8",
+
+        headers={
+
+            "Content-Disposition":
+            "attachment; filename=products.csv"
+
+        }
+
     )
 
 
@@ -3265,6 +3517,126 @@ class BenchmarkService:
                 )
 
                 .limit(limit)
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
+
+
+    def search_cpu(
+        self,
+        keyword
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session
+
+                .query(
+                    CpuBenchmark
+                )
+
+                .filter(
+
+                    CpuBenchmark.name.ilike(
+                        f"%{keyword}%"
+                    )
+
+                )
+
+                .limit(10)
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
+
+    def search_gpu(
+        self,
+        keyword
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session
+
+                .query(
+                    GpuBenchmark
+                )
+
+                .filter(
+
+                    GpuBenchmark.name.ilike(
+                        f"%{keyword}%"
+                    )
+
+                )
+
+                .limit(10)
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
+
+    def get_cpu_list(self):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session
+
+                .query(CpuBenchmark)
+
+                .order_by(
+                    CpuBenchmark.rank.asc()
+                )
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
+
+
+    def get_gpu_list(self):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session
+
+                .query(GpuBenchmark)
+
+                .order_by(
+                    GpuBenchmark.rank.asc()
+                )
 
                 .all()
 
@@ -3830,7 +4202,7 @@ class ProductService:
     def get_products_page(
         self,
         page=1,
-        page_size=20
+        page_size=21
     ):
 
         session = SessionLocal()
@@ -3874,7 +4246,7 @@ class ProductService:
     def get_filtered_products(
         self,
         page=1,
-        page_size=20,
+        page_size=21,
         vendor=None,
         product_type=None,
         price_range=None,
@@ -4216,13 +4588,38 @@ class ProductService:
 
             session.close()
 
+    def search_suggestions(
+        self,
+        keyword
+    ):
 
-====================================================================================================
-FILE: services\recommendation_service.py
-====================================================================================================
-[LANGUAGE: python]
+        session = SessionLocal()
 
+        try:
 
+            return (
+
+                session
+
+                .query(Product)
+
+                .filter(
+
+                    Product.title.ilike(
+                        f"%{keyword}%"
+                    )
+
+                )
+
+                .limit(10)
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
 
 
 ====================================================================================================
@@ -4324,6 +4721,85 @@ FILE: static\css\style.css
 
 table td {
     vertical-align: middle;
+}
+
+
+/* Ảnh sản phẩm */
+
+.card-img-top {
+
+    height: 220px;
+
+    object-fit: contain;
+
+    padding: 10px;
+
+}
+
+/* Hover ảnh */
+
+.card-img-top:hover {
+
+    transform: scale(1.03);
+
+    transition: 0.2s ease;
+
+}
+
+/* Tiêu đề sản phẩm tối đa 2 dòng */
+
+.card-title {
+
+    min-height: 48px;
+
+    overflow: hidden;
+
+}
+
+/* Card sản phẩm */
+
+.product-card {
+
+    transition: 0.2s ease;
+
+}
+
+.product-card:hover {
+
+    transform: translateY(-3px);
+
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+
+}
+
+/* Ảnh sản phẩm */
+
+.card-img-top {
+
+    height: 220px;
+
+    object-fit: contain;
+
+    padding: 10px;
+
+    transition: 0.2s ease;
+
+}
+
+.card-img-top:hover {
+
+    transform: scale(1.03);
+
+}
+
+/* Tiêu đề sản phẩm */
+
+.card-title {
+
+    min-height: 55px;
+
+    overflow: hidden;
+
 }
 
 
@@ -4545,41 +5021,71 @@ shadow-sm
 
         <!-- Search -->
 
-        <form
+        <div class="position-relative">
 
+            <form
             class="d-flex"
-
             action="/search"
-
             method="get"
-
-        >
+            >
 
             <input
 
-                class="form-control me-2"
+            id="searchInput"
 
-                type="search"
+            class="form-control me-2"
 
-                name="q"
+            type="search"
 
-                placeholder="RTX 5070, Ryzen 7, SSD Samsung..."
+            name="q"
+
+            placeholder="RTX 5070, Ryzen 7, SSD Samsung..."
+
+            autocomplete="off"
 
             >
 
             <button
 
-                class="btn btn-outline-light"
+            class="btn btn-outline-light"
 
-                type="submit"
+            type="submit"
 
             >
 
-                <i class="fa-solid fa-magnifying-glass"></i>
+            <i class="fa-solid fa-magnifying-glass"></i>
 
             </button>
 
-        </form>
+            </form>
+
+           <div
+
+            id="searchResults"
+
+            class="
+            list-group
+            position-absolute
+            w-100
+            shadow
+            bg-white
+            "
+
+            style="
+            top:100%;
+            left:0;
+            z-index:9999;
+            max-height:500px;
+            overflow-y:auto;
+            "
+
+            ></div>
+
+            </div>
+
+                </div>
+
+        
 
     </div>
 
@@ -4613,7 +5119,139 @@ py-3
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
 
+const searchInput =
+document.getElementById(
+    "searchInput"
+);
+
+const searchResults =
+document.getElementById(
+    "searchResults"
+);
+
+if(searchInput){
+
+searchInput.addEventListener(
+
+    "input",
+
+    async ()=>{
+        console.log(searchInput.value);
+        const keyword =
+        searchInput.value.trim();
+
+        if(
+            keyword.length < 2
+        ){
+
+            searchResults.innerHTML =
+            "";
+
+            return;
+        }
+
+        const response =
+        await fetch(
+
+            `/api/search-suggest?q=${encodeURIComponent(keyword)}`
+
+        );
+
+        const data =
+        await response.json();
+
+        searchResults.innerHTML =
+        "";
+
+        data.forEach(item => {
+
+            const a =
+            document.createElement(
+                "a"
+            );
+
+            a.className =
+            "list-group-item list-group-item-action";
+
+            a.href =
+            `/products/view/${item.id}`;
+
+            a.innerHTML = `
+
+            <div class="d-flex align-items-center">
+
+                <img
+
+                    src="${item.image}"
+
+                    style="
+                    width:50px;
+                    height:50px;
+                    object-fit:contain;
+                    margin-right:10px;
+                    "
+
+                >
+
+                <div>
+
+                    <div>
+
+                        ${
+                            item.title.length > 60
+                            ? item.title.slice(0,60) + "..."
+                            : item.title
+                        }
+
+                    </div>
+
+                    <div
+                        class="text-danger fw-bold"
+                    >
+
+                        ${Number(
+                            item.price || 0
+                        ).toLocaleString(
+                            "vi-VN"
+                        )} VNĐ
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            `;
+
+            searchResults.appendChild(
+                a
+            );
+
+        });
+
+});
+}
+
+document.addEventListener(
+    "click",
+    function(e){
+
+        if(
+            !searchInput.contains(e.target)
+            &&
+            !searchResults.contains(e.target)
+        ){
+
+            searchResults.innerHTML = "";
+
+        }
+
+    }
+);
+
+</script>
 </body>
 
 </html>
@@ -5305,80 +5943,110 @@ method="get"
 class="row g-3 mb-4"
 >
 
-    <div class="col-md-5">
+    <div class="col-md-5 position-relative">
 
-        <select
-        name="cpu1"
-        class="form-select"
+        <label class="form-label">
+
+            CPU thứ nhất
+
+        </label>
+
+        <input
+
+            type="text"
+
+            id="cpu1Search"
+
+            class="form-control"
+
+            placeholder="Nhập tên CPU..."
+
+            autocomplete="off"
+
+            value="{{ cpu1.name if cpu1 else '' }}"
+
         >
 
-            <option value="">
+        <input
 
-                Chọn CPU thứ nhất
+            type="hidden"
 
-            </option>
+            name="cpu1"
 
-            {% for cpu in cpu_list %}
+            id="cpu1Value"
 
-            <option
+            value="{{ cpu1.cpu_id if cpu1 else '' }}"
 
-            value="{{ cpu.id }}"
+        >
 
-            {% if cpu1 and cpu.id == cpu1.id %}
-            selected
-            {% endif %}
+        <div
 
-            >
+            id="cpu1Results"
 
-                {{ cpu.name }}
+            class="list-group position-absolute w-100"
 
-            </option>
+            style="z-index:1000;"
 
-            {% endfor %}
-
-        </select>
+        ></div>
 
     </div>
 
-    <div class="col-md-5">
+    <div class="col-md-5 position-relative">
 
-        <select
-        name="cpu2"
-        class="form-select"
+        <label class="form-label">
+
+            CPU thứ hai
+
+        </label>
+
+        <input
+
+            type="text"
+
+            id="cpu2Search"
+
+            class="form-control"
+
+            placeholder="Nhập tên CPU..."
+
+            autocomplete="off"
+
+            value="{{ cpu2.name if cpu2 else '' }}"
+
         >
 
-            <option value="">
+        <input
 
-                Chọn CPU thứ hai
+            type="hidden"
 
-            </option>
+            name="cpu2"
 
-            {% for cpu in cpu_list %}
+            id="cpu2Value"
 
-            <option
+            value="{{ cpu2.cpu_id if cpu2 else '' }}"
 
-            value="{{ cpu.id }}"
+        >
 
-            {% if cpu2 and cpu.id == cpu2.id %}
-            selected
-            {% endif %}
+        <div
 
-            >
+            id="cpu2Results"
 
-                {{ cpu.name }}
+            class="list-group position-absolute w-100"
 
-            </option>
+            style="z-index:1000;"
 
-            {% endfor %}
-
-        </select>
+        ></div>
 
     </div>
 
-    <div class="col-md-2">
+    <div class="col-md-2 d-flex align-items-end">
 
         <button
-        class="btn btn-primary w-100"
+
+            type="submit"
+
+            class="btn btn-primary w-100"
+
         >
 
             So sánh
@@ -5429,7 +6097,96 @@ class="row g-3 mb-4"
             </thead>
 
             <tbody>
+            {% set cpumark_diff =
+            (
+            (
+            (cpu1.cpumark or 0)
+            -
+            (cpu2.cpumark or 0)
+            )
+            /
+            (cpu2.cpumark or 1)
+            *
+            100
+            )|round(1) %}
 
+            {% set thread_diff =
+            (
+            (
+            (cpu1.thread_mark or 0)
+            -
+            (cpu2.thread_mark or 0)
+            )
+            /
+            (cpu2.thread_mark or 1)
+            *
+            100
+            )|round(1) %}
+
+            {% set core_diff =
+            (
+            (
+            (cpu1.cores or 0)
+            -
+            (cpu2.cores or 0)
+            )
+            /
+            (cpu2.cores or 1)
+            *
+            100
+            )|round(1) %}
+
+            {% set threads_diff =
+            (
+            (
+            (cpu1.threads or 0)
+            -
+            (cpu2.threads or 0)
+            )
+            /
+            (cpu2.threads or 1)
+            *
+            100
+            )|round(1) %}
+
+            {% set speed_diff =
+            (
+            (
+            (cpu1.speed or 0)
+            -
+            (cpu2.speed or 0)
+            )
+            /
+            (cpu2.speed or 1)
+            *
+            100
+            )|round(1) %}
+
+            {% set turbo_diff =
+            (
+            (
+            (cpu1.turbo or 0)
+            -
+            (cpu2.turbo or 0)
+            )
+            /
+            (cpu2.turbo or 1)
+            *
+            100
+            )|round(1) %}
+
+            {% set tdp_diff =
+            (
+            (
+            (cpu1.tdp or 0)
+            -
+            (cpu2.tdp or 0)
+            )
+            /
+            (cpu2.tdp or 1)
+            *
+            100
+            )|round(1) %}
             <tr>
 
                 <td>
@@ -5440,13 +6197,47 @@ class="row g-3 mb-4"
 
                 <td>
 
-                    {{ "{:,.0f}".format(cpu1.cpumark or 0) }}
+                <span
+                class="
+                fw-bold
+                {% if (cpu1.cpumark or 0) > (cpu2.cpumark or 0) %}
+                text-success
+                {% elif (cpu1.cpumark or 0) < (cpu2.cpumark or 0) %}
+                text-danger
+                {% endif %}
+                "
+                >
+
+                {{ "{:,.0f}".format(cpu1.cpumark or 0) }}
+
+                {% if cpumark_diff > 0 %}
+                (+{{ cpumark_diff }}%)
+                {% endif %}
+
+                </span>
 
                 </td>
 
                 <td>
 
-                    {{ "{:,.0f}".format(cpu2.cpumark or 0) }}
+                <span
+                class="
+                fw-bold
+                {% if (cpu2.cpumark or 0) > (cpu1.cpumark or 0) %}
+                text-success
+                {% elif (cpu2.cpumark or 0) < (cpu1.cpumark or 0) %}
+                text-danger
+                {% endif %}
+                "
+                >
+
+                {{ "{:,.0f}".format(cpu2.cpumark or 0) }}
+
+                {% if cpumark_diff < 0 %}
+                (+{{ (-cpumark_diff) }}%)
+                {% endif %}
+
+                </span>
 
                 </td>
 
@@ -5462,35 +6253,43 @@ class="row g-3 mb-4"
 
                 <td>
 
+                    <span class="
+                    fw-bold
+                    {% if (cpu1.thread_mark or 0) > (cpu2.thread_mark or 0) %}
+                    text-success
+                    {% elif (cpu1.thread_mark or 0) < (cpu2.thread_mark or 0) %}
+                    text-danger
+                    {% endif %}
+                    ">
+
                     {{ "{:,.0f}".format(cpu1.thread_mark or 0) }}
+
+                    {% if thread_diff > 0 %}
+                    (+{{ thread_diff }}%)
+                    {% endif %}
+
+                    </span>
 
                 </td>
 
                 <td>
+
+                    <span class="
+                    fw-bold
+                    {% if (cpu2.thread_mark or 0) > (cpu1.thread_mark or 0) %}
+                    text-success
+                    {% elif (cpu2.thread_mark or 0) < (cpu1.thread_mark or 0) %}
+                    text-danger
+                    {% endif %}
+                    ">
 
                     {{ "{:,.0f}".format(cpu2.thread_mark or 0) }}
 
-                </td>
+                    {% if thread_diff < 0 %}
+                    (+{{ (-thread_diff) }}%)
+                    {% endif %}
 
-            </tr>
-
-            <tr>
-
-                <td>
-
-                    Cores
-
-                </td>
-
-                <td>
-
-                    {{ cpu1.cores }}
-
-                </td>
-
-                <td>
-
-                    {{ cpu2.cores }}
+                    </span>
 
                 </td>
 
@@ -5498,103 +6297,235 @@ class="row g-3 mb-4"
 
             <tr>
 
+                <td>Cores</td>
+
                 <td>
 
-                    Threads
+                <span class="
+                fw-bold
+                {% if (cpu1.cores or 0) > (cpu2.cores or 0) %}
+                text-success
+                {% elif (cpu1.cores or 0) < (cpu2.cores or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ cpu1.cores }}
+
+                {% if core_diff > 0 %}
+                (+{{ core_diff }}%)
+                {% endif %}
+
+                </span>
 
                 </td>
 
                 <td>
 
-                    {{ cpu1.threads }}
+                <span class="
+                fw-bold
+                {% if (cpu2.cores or 0) > (cpu1.cores or 0) %}
+                text-success
+                {% elif (cpu2.cores or 0) < (cpu1.cores or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ cpu2.cores }}
+
+                {% if core_diff < 0 %}
+                (+{{ (-core_diff) }}%)
+                {% endif %}
+
+                </span>
 
                 </td>
 
-                <td>
-
-                    {{ cpu2.threads }}
-
-                </td>
-
-            </tr>
+                </tr>
 
             <tr>
 
+                <td>Threads</td>
+
                 <td>
 
-                    Base Clock
+                <span class="
+                fw-bold
+                {% if (cpu1.threads or 0) > (cpu2.threads or 0) %}
+                text-success
+                {% elif (cpu1.threads or 0) < (cpu2.threads or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ cpu1.threads }}
+
+                {% if threads_diff > 0 %}
+                (+{{ threads_diff }}%)
+                {% endif %}
+
+                </span>
 
                 </td>
 
                 <td>
 
-                    {{ cpu1.speed }}
+                <span class="
+                fw-bold
+                {% if (cpu2.threads or 0) > (cpu1.threads or 0) %}
+                text-success
+                {% elif (cpu2.threads or 0) < (cpu1.threads or 0) %}
+                text-danger
+                {% endif %}
+                ">
 
-                    MHz
+                {{ cpu2.threads }}
+
+                {% if threads_diff < 0 %}
+                (+{{ (-threads_diff) }}%)
+                {% endif %}
+
+                </span>
 
                 </td>
 
-                <td>
-
-                    {{ cpu2.speed }}
-
-                    MHz
-
-                </td>
-
-            </tr>
+                </tr>
 
             <tr>
 
+                <td>Base Clock</td>
+
                 <td>
 
-                    Turbo Clock
+                <span class="
+                fw-bold
+                {% if (cpu1.speed or 0) > (cpu2.speed or 0) %}
+                text-success
+                {% elif (cpu1.speed or 0) < (cpu2.speed or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ cpu1.speed }} MHz
+
+                {% if speed_diff > 0 %}
+                (+{{ speed_diff }}%)
+                {% endif %}
+
+                </span>
 
                 </td>
 
                 <td>
 
-                    {{ cpu1.turbo }}
+                <span class="
+                fw-bold
+                {% if (cpu2.speed or 0) > (cpu1.speed or 0) %}
+                text-success
+                {% elif (cpu2.speed or 0) < (cpu1.speed or 0) %}
+                text-danger
+                {% endif %}
+                ">
 
-                    MHz
+                {{ cpu2.speed }} MHz
+
+                {% if speed_diff < 0 %}
+                (+{{ (-speed_diff) }}%)
+                {% endif %}
+
+                </span>
 
                 </td>
 
-                <td>
-
-                    {{ cpu2.turbo }}
-
-                    MHz
-
-                </td>
-
-            </tr>
+                </tr>
 
             <tr>
 
+                <td>Turbo Clock</td>
+
                 <td>
 
-                    TDP
+                <span class="
+                fw-bold
+                {% if (cpu1.turbo or 0) > (cpu2.turbo or 0) %}
+                text-success
+                {% elif (cpu1.turbo or 0) < (cpu2.turbo or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ cpu1.turbo }} MHz
+
+                {% if turbo_diff > 0 %}
+                (+{{ turbo_diff }}%)
+                {% endif %}
+
+                </span>
 
                 </td>
 
                 <td>
 
-                    {{ cpu1.tdp }}
+                <span class="
+                fw-bold
+                {% if (cpu2.turbo or 0) > (cpu1.turbo or 0) %}
+                text-success
+                {% elif (cpu2.turbo or 0) < (cpu1.turbo or 0) %}
+                text-danger
+                {% endif %}
+                ">
 
-                    W
+                {{ cpu2.turbo }} MHz
+
+                {% if turbo_diff < 0 %}
+                (+{{ (-turbo_diff) }}%)
+                {% endif %}
+
+                </span>
+
+                </td>
+
+                </tr>
+
+            <tr>
+
+                <td>TDP</td>
+
+                <td>
+
+                <span class="
+                fw-bold
+                {% if (cpu1.tdp or 0) < (cpu2.tdp or 0) %}
+                text-success
+                {% elif (cpu1.tdp or 0) > (cpu2.tdp or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ cpu1.tdp }} W
+
+                </span>
 
                 </td>
 
                 <td>
 
-                    {{ cpu2.tdp }}
+                <span class="
+                fw-bold
+                {% if (cpu2.tdp or 0) < (cpu1.tdp or 0) %}
+                text-success
+                {% elif (cpu2.tdp or 0) > (cpu1.tdp or 0) %}
+                text-danger
+                {% endif %}
+                ">
 
-                    W
+                {{ cpu2.tdp }} W
+
+                </span>
 
                 </td>
 
-            </tr>
+                </tr>
 
             <tr>
 
@@ -5621,6 +6552,7 @@ class="row g-3 mb-4"
             </tbody>
 
         </table>
+
         <hr class="my-4">
 
         <div class="card shadow-sm">
@@ -5633,16 +6565,22 @@ class="row g-3 mb-4"
 
                 </h4>
 
-                <canvas id="cpuCompareChart"></canvas>
+                <canvas
+                    id="cpuCompareChart"
+                ></canvas>
 
             </div>
 
         </div>
+
     </div>
 
 </div>
 
 {% endif %}
+
+{% if cpu1 and cpu2 %}
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
@@ -5670,7 +6608,37 @@ new Chart(
                     "CPU Mark",
 
                     data:
-                    {{ chart_values|tojson }}
+                    {{ cpu_mark_values|tojson }}
+
+                },
+
+                {
+
+                    label:
+                    "Single Thread",
+
+                    data:
+                    {{ thread_values|tojson }}
+
+                },
+
+                {
+
+                    label:
+                    "Số nhân",
+
+                    data:
+                    {{ core_values|tojson }}
+
+                },
+
+                {
+
+                    label:
+                    "Số luồng",
+
+                    data:
+                    {{ thread_count_values|tojson }}
 
                 }
 
@@ -5689,6 +6657,121 @@ new Chart(
 );
 
 </script>
+
+{% endif %}
+
+<script>
+
+function setupCpuSearch(
+
+    inputId,
+    resultId,
+    hiddenId
+
+){
+
+    const input =
+    document.getElementById(
+        inputId
+    );
+
+    const results =
+    document.getElementById(
+        resultId
+    );
+
+    const hidden =
+    document.getElementById(
+        hiddenId
+    );
+
+    input.addEventListener(
+
+        "input",
+
+        async () => {
+
+            const keyword =
+            input.value.trim();
+
+            if(
+                keyword.length < 2
+            ){
+
+                results.innerHTML = "";
+
+                return;
+
+            }
+
+            const response =
+            await fetch(
+
+                `/api/cpu-search?q=${encodeURIComponent(keyword)}`
+
+            );
+
+            const data =
+            await response.json();
+
+            results.innerHTML = "";
+
+            data.forEach(cpu => {
+
+                const item =
+                document.createElement(
+                    "a"
+                );
+
+                item.href = "#";
+
+                item.className =
+                "list-group-item list-group-item-action";
+
+                item.textContent =
+                cpu.name;
+
+                item.onclick = (e)=>{
+
+                    e.preventDefault();
+
+                    input.value =
+                    cpu.name;
+
+                    hidden.value =
+                    cpu.id;
+
+                    results.innerHTML =
+                    "";
+
+                };
+
+                results.appendChild(
+                    item
+                );
+
+            });
+
+        }
+
+    );
+
+}
+
+setupCpuSearch(
+    "cpu1Search",
+    "cpu1Results",
+    "cpu1Value"
+);
+
+setupCpuSearch(
+    "cpu2Search",
+    "cpu2Results",
+    "cpu2Value"
+);
+
+</script>
+
 {% endblock %}
 
 
@@ -5886,11 +6969,29 @@ CPU Benchmark
 
 {% block content %}
 
-<h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
 
-CPU Benchmark
+    <h2>
 
-</h2>
+        CPU Benchmark
+
+    </h2>
+
+    <a
+
+        href="/export/cpu"
+
+        class="btn btn-success"
+
+    >
+
+        <i class="fa-solid fa-file-csv"></i>
+
+        Xuất CSV
+
+    </a>
+
+</div>
 
 <form
 method="get"
@@ -6059,80 +7160,110 @@ method="get"
 class="row g-3 mb-4"
 >
 
-    <div class="col-md-5">
+    <div class="col-md-5 position-relative">
 
-        <select
-        name="gpu1"
-        class="form-select"
+        <label class="form-label">
+
+            GPU thứ nhất
+
+        </label>
+
+        <input
+
+            type="text"
+
+            id="gpu1Search"
+
+            class="form-control"
+
+            placeholder="Nhập tên GPU..."
+
+            autocomplete="off"
+
+            value="{{ gpu1.name if gpu1 else '' }}"
+
         >
 
-            <option value="">
+        <input
 
-                Chọn GPU thứ nhất
+            type="hidden"
 
-            </option>
+            name="gpu1"
 
-            {% for gpu in gpu_list %}
+            id="gpu1Value"
 
-            <option
+            value="{{ gpu1.gpu_id if gpu1 else '' }}"
 
-            value="{{ gpu.id }}"
+        >
 
-            {% if gpu1 and gpu.id == gpu1.id %}
-            selected
-            {% endif %}
+        <div
 
-            >
+            id="gpu1Results"
 
-                {{ gpu.name }}
+            class="list-group position-absolute w-100"
 
-            </option>
+            style="z-index:1000;"
 
-            {% endfor %}
-
-        </select>
+        ></div>
 
     </div>
 
-    <div class="col-md-5">
+    <div class="col-md-5 position-relative">
 
-        <select
-        name="gpu2"
-        class="form-select"
+        <label class="form-label">
+
+            GPU thứ hai
+
+        </label>
+
+        <input
+
+            type="text"
+
+            id="gpu2Search"
+
+            class="form-control"
+
+            placeholder="Nhập tên GPU..."
+
+            autocomplete="off"
+
+            value="{{ gpu2.name if gpu2 else '' }}"
+
         >
 
-            <option value="">
+        <input
 
-                Chọn GPU thứ hai
+            type="hidden"
 
-            </option>
+            name="gpu2"
 
-            {% for gpu in gpu_list %}
+            id="gpu2Value"
 
-            <option
+            value="{{ gpu2.gpu_id if gpu2 else '' }}"
 
-            value="{{ gpu.id }}"
+        >
 
-            {% if gpu2 and gpu.id == gpu2.id %}
-            selected
-            {% endif %}
+        <div
 
-            >
+            id="gpu2Results"
 
-                {{ gpu.name }}
+            class="list-group position-absolute w-100"
 
-            </option>
+            style="z-index:1000;"
 
-            {% endfor %}
-
-        </select>
+        ></div>
 
     </div>
 
-    <div class="col-md-2">
+    <div class="col-md-2 d-flex align-items-end">
 
         <button
-        class="btn btn-primary w-100"
+
+            type="submit"
+
+            class="btn btn-primary w-100"
+
         >
 
             So sánh
@@ -6184,44 +7315,157 @@ class="row g-3 mb-4"
 
             <tbody>
 
+            {% set g3d_diff =
+            (
+            (
+            (gpu1.g3d_mark or 0)
+            -
+            (gpu2.g3d_mark or 0)
+            )
+            /
+            (gpu2.g3d_mark or 1)
+            *
+            100
+            )|round(1) %}
+
+            {% set g2d_diff =
+            (
+            (
+            (gpu1.g2d_mark or 0)
+            -
+            (gpu2.g2d_mark or 0)
+            )
+            /
+            (gpu2.g2d_mark or 1)
+            *
+            100
+            )|round(1) %}
+
+            {% set tdp_diff =
+            (
+            (
+            (gpu1.tdp or 0)
+            -
+            (gpu2.tdp or 0)
+            )
+            /
+            (gpu2.tdp or 1)
+            *
+            100
+            )|round(1) %}
             <tr>
 
                 <td>G3D Mark</td>
 
                 <td>
-                    {{ "{:,.0f}".format(gpu1.g3d_mark or 0) }}
+
+                <span class="
+                fw-bold
+                {% if (gpu1.g3d_mark or 0) > (gpu2.g3d_mark or 0) %}
+                text-success
+                {% elif (gpu1.g3d_mark or 0) < (gpu2.g3d_mark or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ "{:,.0f}".format(gpu1.g3d_mark or 0) }}
+
+                {% if g3d_diff > 0 %}
+                (+{{ g3d_diff }}%)
+                {% endif %}
+
+                </span>
+
                 </td>
 
                 <td>
-                    {{ "{:,.0f}".format(gpu2.g3d_mark or 0) }}
+
+                <span class="
+                fw-bold
+                {% if (gpu2.g3d_mark or 0) > (gpu1.g3d_mark or 0) %}
+                text-success
+                {% elif (gpu2.g3d_mark or 0) < (gpu1.g3d_mark or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ "{:,.0f}".format(gpu2.g3d_mark or 0) }}
+
+                {% if g3d_diff < 0 %}
+                (+{{ (-g3d_diff) }}%)
+                {% endif %}
+
+                </span>
+
                 </td>
 
-            </tr>
+                </tr>
 
             <tr>
 
                 <td>G2D Mark</td>
 
                 <td>
-                    {{ "{:,.0f}".format(gpu1.g2d_mark or 0) }}
+
+                <span class="
+                fw-bold
+                {% if (gpu1.g2d_mark or 0) > (gpu2.g2d_mark or 0) %}
+                text-success
+                {% elif (gpu1.g2d_mark or 0) < (gpu2.g2d_mark or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ "{:,.0f}".format(gpu1.g2d_mark or 0) }}
+
+                {% if g2d_diff > 0 %}
+                (+{{ g2d_diff }}%)
+                {% endif %}
+
+                </span>
+
                 </td>
 
                 <td>
-                    {{ "{:,.0f}".format(gpu2.g2d_mark or 0) }}
+
+                <span class="
+                fw-bold
+                {% if (gpu2.g2d_mark or 0) > (gpu1.g2d_mark or 0) %}
+                text-success
+                {% elif (gpu2.g2d_mark or 0) < (gpu1.g2d_mark or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ "{:,.0f}".format(gpu2.g2d_mark or 0) }}
+
+                {% if g2d_diff < 0 %}
+                (+{{ (-g2d_diff) }}%)
+                {% endif %}
+
+                </span>
+
                 </td>
 
-            </tr>
-
+                </tr>
             <tr>
 
-                <td>VRAM</td>
-
                 <td>
-                    {{ gpu1.memory_size }}
+
+                    VRAM
+
                 </td>
 
                 <td>
+
+                    {{ gpu1.memory_size }}
+
+                </td>
+
+                <td>
+
                     {{ gpu2.memory_size }}
+
                 </td>
 
             </tr>
@@ -6231,46 +7475,125 @@ class="row g-3 mb-4"
                 <td>Core Clock</td>
 
                 <td>
-                    {{ gpu1.core_clock }}
+
+                <span class="
+                fw-bold
+                {% if gpu1.core_clock > gpu2.core_clock %}
+                text-success
+                {% elif gpu1.core_clock < gpu2.core_clock %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ gpu1.core_clock }}
+
+                </span>
+
                 </td>
 
                 <td>
-                    {{ gpu2.core_clock }}
+
+                <span class="
+                fw-bold
+                {% if gpu2.core_clock > gpu1.core_clock %}
+                text-success
+                {% elif gpu2.core_clock < gpu1.core_clock %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ gpu2.core_clock }}
+
+                </span>
+
                 </td>
 
-            </tr>
+                </tr>
 
             <tr>
 
                 <td>Memory Clock</td>
 
                 <td>
-                    {{ gpu1.memory_clock }}
+
+                <span class="
+                fw-bold
+                {% if gpu1.memory_clock > gpu2.memory_clock %}
+                text-success
+                {% elif gpu1.memory_clock < gpu2.memory_clock %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ gpu1.memory_clock }}
+
+                </span>
+
                 </td>
 
                 <td>
-                    {{ gpu2.memory_clock }}
+
+                <span class="
+                fw-bold
+                {% if gpu2.memory_clock > gpu1.memory_clock %}
+                text-success
+                {% elif gpu2.memory_clock < gpu1.memory_clock %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ gpu2.memory_clock }}
+
+                </span>
+
                 </td>
 
-            </tr>
+                </tr>
 
             <tr>
 
                 <td>TDP</td>
 
                 <td>
-                    {{ gpu1.tdp }} W
+
+                <span class="
+                fw-bold
+                {% if (gpu1.tdp or 0) < (gpu2.tdp or 0) %}
+                text-success
+                {% elif (gpu1.tdp or 0) > (gpu2.tdp or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ gpu1.tdp }} W
+
+                </span>
+
                 </td>
 
                 <td>
-                    {{ gpu2.tdp }} W
+
+                <span class="
+                fw-bold
+                {% if (gpu2.tdp or 0) < (gpu1.tdp or 0) %}
+                text-success
+                {% elif (gpu2.tdp or 0) > (gpu1.tdp or 0) %}
+                text-danger
+                {% endif %}
+                ">
+
+                {{ gpu2.tdp }} W
+
+                </span>
+
                 </td>
 
-            </tr>
+                </tr>
 
             </tbody>
 
         </table>
+
         <hr class="my-4">
 
         <div class="card shadow-sm">
@@ -6290,11 +7613,15 @@ class="row g-3 mb-4"
             </div>
 
         </div>
+
     </div>
 
 </div>
 
 {% endif %}
+
+{% if gpu1 and gpu2 %}
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
@@ -6361,6 +7688,121 @@ new Chart(
 );
 
 </script>
+
+{% endif %}
+
+<script>
+
+function setupGpuSearch(
+
+    inputId,
+    resultId,
+    hiddenId
+
+){
+
+    const input =
+    document.getElementById(
+        inputId
+    );
+
+    const results =
+    document.getElementById(
+        resultId
+    );
+
+    const hidden =
+    document.getElementById(
+        hiddenId
+    );
+
+    input.addEventListener(
+
+        "input",
+
+        async () => {
+
+            const keyword =
+            input.value.trim();
+
+            if(
+                keyword.length < 2
+            ){
+
+                results.innerHTML = "";
+
+                return;
+
+            }
+
+            const response =
+            await fetch(
+
+                `/api/gpu-search?q=${encodeURIComponent(keyword)}`
+
+            );
+
+            const data =
+            await response.json();
+
+            results.innerHTML = "";
+
+            data.forEach(gpu => {
+
+                const item =
+                document.createElement(
+                    "a"
+                );
+
+                item.href = "#";
+
+                item.className =
+                "list-group-item list-group-item-action";
+
+                item.textContent =
+                gpu.name;
+
+                item.onclick = (e)=>{
+
+                    e.preventDefault();
+
+                    input.value =
+                    gpu.name;
+
+                    hidden.value =
+                    gpu.id;
+
+                    results.innerHTML =
+                    "";
+
+                };
+
+                results.appendChild(
+                    item
+                );
+
+            });
+
+        }
+
+    );
+
+}
+
+setupGpuSearch(
+    "gpu1Search",
+    "gpu1Results",
+    "gpu1Value"
+);
+
+setupGpuSearch(
+    "gpu2Search",
+    "gpu2Results",
+    "gpu2Value"
+);
+
+</script>
+
 {% endblock %}
 
 
@@ -6562,11 +8004,29 @@ GPU Benchmark
 
     <div>
 
-        <h2>
+        <div class="d-flex justify-content-between align-items-center mb-4">
 
-            GPU Benchmark
+    <h2>
 
-        </h2>
+        GPU Benchmark
+
+    </h2>
+
+    <a
+
+        href="/export/gpu"
+
+        class="btn btn-success"
+
+    >
+
+        <i class="fa-solid fa-file-csv"></i>
+
+        Xuất CSV
+
+    </a>
+
+</div>
 
         <p class="text-muted mb-0">
 
@@ -7240,7 +8700,29 @@ Danh sách sản phẩm
 
     <div>
 
-        <h2>Danh sách sản phẩm</h2>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+
+            <h2>
+
+                Danh sách sản phẩm
+
+            </h2>
+
+            <a
+
+                href="/export/products"
+
+                class="btn btn-success"
+
+            >
+
+                <i class="fa-solid fa-file-csv"></i>
+
+                Xuất CSV
+
+            </a>
+
+        </div>
 
         <p class="text-muted mb-0">
             Tìm thấy
@@ -7505,60 +8987,136 @@ Danh sách sản phẩm
 
             {% for product in products %}
 
-            <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 position-relative">
 
-                <div class="card h-100">
+            <!-- Badge giảm giá -->
 
-                    <img
+            {% if product.compare_at_price
+                  and product.compare_at_price > product.price %}
 
-                        src="{{ product.image_url }}"
+            <span
 
-                        class="card-img-top"
+                class="
+                badge
+                bg-danger
+                position-absolute
+                top-0
+                end-0
+                m-2
+                "
 
-                        style="
-                        height:220px;
-                        object-fit:contain;
-                        "
+            >
+
+                -{{
+                    (
+                        (
+                            product.compare_at_price
+                            -
+                            product.price
+                        )
+                        /
+                        product.compare_at_price
+                        * 100
+                    )|round(0)|int
+                }}%
+
+            </span>
+
+            {% endif %}
+
+            <!-- Ảnh -->
+
+            <a
+            href="/products/view/{{ product.product_id }}"
+            >
+
+                <img
+
+                    src="{{ product.image_url }}"
+
+                    class="card-img-top"
+
+                    alt="{{ product.title }}"
+
+                >
+
+            </a>
+
+            <!-- Body -->
+
+            <div class="card-body d-flex flex-column">
+
+                <h5 class="card-title">
+
+                    <a
+
+                    href="/products/view/{{ product.product_id }}"
+
+                    class="
+                    text-decoration-none
+                    text-dark
+                    "
 
                     >
 
-                    <div class="card-body">
+                        {{ product.title }}
 
-                        <h6>
+                    </a>
 
-                            {{ product.title }}
+                </h5>
 
-                        </h6>
+                <p class="text-muted mb-2">
 
-                        <p class="text-muted">
+                    {{ product.vendor }}
 
-                            {{ product.vendor }}
+                </p>
 
-                        </p>
+                <!-- Giá -->
 
-                        <p class="text-danger">
+                <div class="mt-auto">
 
-                            {{ "{:,.0f}".format(product.price) }}
+                    <div class="text-danger fw-bold fs-5">
 
-                            VNĐ
-
-                        </p>
-
-                        <a
-
-                        href="/products/view/{{ product.product_id }}"
-
-                        class="btn btn-primary w-100"
-
-                        >
-
-                            Chi tiết
-
-                        </a>
+                        {{ "{:,.0f}".format(product.price) }} VNĐ
 
                     </div>
 
+                    {% if product.compare_at_price
+                          and product.compare_at_price > product.price %}
+
+                    <div class="
+                    text-muted
+                    text-decoration-line-through
+                    small
+                    ">
+
+                        {{ "{:,.0f}".format(product.compare_at_price) }} VNĐ
+
+                    </div>
+
+                    {% endif %}
+
                 </div>
+
+                <a
+
+                href="/products/view/{{ product.product_id }}"
+
+                class="
+                btn
+                btn-primary
+                mt-3
+                "
+
+                >
+
+                    Chi tiết
+
+                </a>
+
+            </div>
+
+        </div>
 
             </div>
 

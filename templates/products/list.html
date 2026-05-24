@@ -20,14 +20,23 @@ Danh sách sản phẩm
 
     </div>
 
-    <span class="text-muted">
+    <div class="d-flex gap-2">
 
-        Trang {{ page }} / {{ total_pages }}
+        <a
+        href="/export/products"
+        class="btn btn-success"
+        >
+            <i class="fa-solid fa-file-csv"></i>
+            Xuất CSV
+        </a>
 
-    </span>
+        <span class="text-muted align-self-center">
+            Trang {{ page }} / {{ total_pages }}
+        </span>
+
+    </div>
 
 </div>
-
 <form method="get" class="row g-2 mb-4">
 
     <div class="col-md-3">
@@ -275,60 +284,138 @@ Danh sách sản phẩm
 
             {% for product in products %}
 
-            <div class="col-lg-4 col-md-6 mb-4">
+            <div class="col-md-4 mb-4">
 
-                <div class="card h-100">
+                <div class="card h-100 product-card position-relative">
 
-                    <img
+            <!-- Badge giảm giá -->
 
-                        src="{{ product.image_url }}"
+            {% if product.compare_at_price
+                  and product.compare_at_price > product.price %}
 
-                        class="card-img-top"
+            <span
 
-                        style="
-                        height:220px;
-                        object-fit:contain;
-                        "
+                class="
+                badge
+                bg-danger
+                position-absolute
+                top-0
+                end-0
+                m-2
+                "
+
+            >
+
+                -{{
+                    (
+                        (
+                            product.compare_at_price
+                            -
+                            product.price
+                        )
+                        /
+                        product.compare_at_price
+                        * 100
+                    )|round(0)|int
+                }}%
+
+            </span>
+
+            {% endif %}
+
+            <!-- Ảnh -->
+
+            <a
+            href="/products/view/{{ product.product_id }}"
+            >
+
+                <img
+
+                    src="{{ product.image_url }}"
+
+                    class="card-img-top"
+
+                    alt="{{ product.title }}"
+
+                >
+
+            </a>
+
+            <!-- Body -->
+
+            <div class="card-body d-flex flex-column">
+
+                <h5 class="card-title">
+
+                    <a
+
+                    href="/products/view/{{ product.product_id }}"
+
+                    class="
+                    text-decoration-none
+                    text-dark
+                    "
 
                     >
 
-                    <div class="card-body">
+                        {{ product.title }}
 
-                        <h6>
+                    </a>
 
-                            {{ product.title }}
+                </h5>
 
-                        </h6>
+                <p class="text-muted mb-2">
 
-                        <p class="text-muted">
+                    {{ product.vendor }}
 
-                            {{ product.vendor }}
+                </p>
 
-                        </p>
+                <!-- Giá -->
 
-                        <p class="text-danger">
+                <div class="mt-auto">
 
-                            {{ "{:,.0f}".format(product.price) }}
+                    <div class="text-danger fw-bold fs-5">
 
-                            VNĐ
-
-                        </p>
-
-                        <a
-
-                        href="/products/view/{{ product.product_id }}"
-
-                        class="btn btn-primary w-100"
-
-                        >
-
-                            Chi tiết
-
-                        </a>
+                        {{ "{:,.0f}".format(product.price) }} VNĐ
 
                     </div>
 
+                    {% if product.compare_at_price
+                          and product.compare_at_price > product.price %}
+
+                    <div class="
+                    text-muted
+                    text-decoration-line-through
+                    small
+                    ">
+
+                        {{ "{:,.0f}".format(product.compare_at_price) }} VNĐ
+
+                    </div>
+
+                    {% endif %}
+
                 </div>
+
+                <a
+
+                href="/products/view/{{ product.product_id }}"
+
+                class="
+                btn
+                btn-primary
+                mt-3
+                "
+
+                >
+
+                    Chi tiết
+
+                </a>
+
+            </div>
+
+        </div>
 
             </div>
 

@@ -284,3 +284,123 @@ class BenchmarkService:
         finally:
 
             session.close()
+
+
+    def search_cpu(
+        self,
+        keyword
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session
+
+                .query(
+                    CpuBenchmark
+                )
+
+                .filter(
+
+                    CpuBenchmark.name.ilike(
+                        f"%{keyword}%"
+                    )
+
+                )
+
+                .limit(10)
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
+
+    def search_gpu(
+        self,
+        keyword
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session
+
+                .query(
+                    GpuBenchmark
+                )
+
+                .filter(
+
+                    GpuBenchmark.name.ilike(
+                        f"%{keyword}%"
+                    )
+
+                )
+
+                .limit(10)
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
+
+    def get_cpu_list(self):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session
+
+                .query(CpuBenchmark)
+
+                .order_by(
+                    CpuBenchmark.rank.asc()
+                )
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
+
+
+    def get_gpu_list(self):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session
+
+                .query(GpuBenchmark)
+
+                .order_by(
+                    GpuBenchmark.rank.asc()
+                )
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()

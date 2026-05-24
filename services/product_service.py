@@ -99,7 +99,7 @@ class ProductService:
     def get_products_page(
         self,
         page=1,
-        page_size=20
+        page_size=21
     ):
 
         session = SessionLocal()
@@ -143,7 +143,7 @@ class ProductService:
     def get_filtered_products(
         self,
         page=1,
-        page_size=20,
+        page_size=21,
         vendor=None,
         product_type=None,
         price_range=None,
@@ -478,6 +478,39 @@ class ProductService:
                     reverse=True
 
                 )
+
+            )
+
+        finally:
+
+            session.close()
+
+    def search_suggestions(
+        self,
+        keyword
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session
+
+                .query(Product)
+
+                .filter(
+
+                    Product.title.ilike(
+                        f"%{keyword}%"
+                    )
+
+                )
+
+                .limit(10)
+
+                .all()
 
             )
 
