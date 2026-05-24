@@ -611,7 +611,17 @@ FILE: requirements.txt
 ====================================================================================================
 [LANGUAGE: ]
 
+Flask==2.3.3
 
+SQLAlchemy==2.0.36
+
+pyodbc==5.2.0
+
+requests==2.32.3
+
+beautifulsoup4==4.12.3
+
+lxml==5.3.0
 
 
 ====================================================================================================
@@ -3242,13 +3252,25 @@ class BenchmarkService:
 
             if keyword:
 
-                query = query.filter(
+                terms = [
 
-                    CpuBenchmark.name.contains(
-                        keyword
+                    term.strip()
+
+                    for term in keyword.split()
+
+                    if term.strip()
+
+            ]
+
+                for term in terms:
+
+                    query = query.filter(
+
+                        CpuBenchmark.name.ilike(
+                            f"%{term}%"
+                        )
+
                     )
-
-                )
 
             query = query.order_by(
                 CpuBenchmark.rank.asc()
@@ -3290,14 +3312,25 @@ class BenchmarkService:
 
             if keyword:
 
-                query = query.filter(
+                terms = [
 
-                    CpuBenchmark.name.contains(
-                        keyword
+                    term.strip()
+
+                    for term in keyword.split()
+
+                    if term.strip()
+
+                ]
+
+                for term in terms:
+
+                    query = query.filter(
+
+                        CpuBenchmark.name.ilike(
+                            f"%{term}%"
+                        )
+
                     )
-
-                )
-
             return query.count()
 
         finally:
@@ -3321,13 +3354,25 @@ class BenchmarkService:
 
             if keyword:
 
-                query = query.filter(
+                terms = [
 
-                    GpuBenchmark.name.contains(
-                        keyword
+                    term.strip()
+
+                    for term in keyword.split()
+
+                    if term.strip()
+
+                ]
+
+                for term in terms:
+
+                    query = query.filter(
+
+                        CpuBenchmark.name.ilike(
+                            f"%{term}%"
+                        )
+
                     )
-
-                )
 
             query = query.order_by(
                 GpuBenchmark.g3d_mark.desc()
@@ -3369,13 +3414,25 @@ class BenchmarkService:
 
             if keyword:
 
-                query = query.filter(
+                terms = [
 
-                    GpuBenchmark.name.contains(
-                        keyword
+                    term.strip()
+
+                    for term in keyword.split()
+
+                    if term.strip()
+
+                ]
+
+                for term in terms:
+
+                    query = query.filter(
+
+                        GpuBenchmark.name.ilike(
+                            f"%{term}%"
+                        )
+
                     )
-
-                )
 
             return query.count()
 
@@ -3512,21 +3569,36 @@ class BenchmarkService:
 
         try:
 
-            return (
+            if not keyword:
+                return []
 
-                session
+            terms = [
 
-                .query(
-                    CpuBenchmark
-                )
+                term.strip()
 
-                .filter(
+                for term in keyword.split()
+
+                if term.strip()
+
+            ]
+
+            query = session.query(
+                CpuBenchmark
+            )
+
+            for term in terms:
+
+                query = query.filter(
 
                     CpuBenchmark.name.ilike(
-                        f"%{keyword}%"
+                        f"%{term}%"
                     )
 
                 )
+
+            return (
+
+                query
 
                 .limit(10)
 
@@ -3547,21 +3619,36 @@ class BenchmarkService:
 
         try:
 
-            return (
+            if not keyword:
+                return []
 
-                session
+            terms = [
 
-                .query(
-                    GpuBenchmark
-                )
+                term.strip()
 
-                .filter(
+                for term in keyword.split()
+
+                if term.strip()
+
+            ]
+
+            query = session.query(
+                GpuBenchmark
+            )
+
+            for term in terms:
+
+                query = query.filter(
 
                     GpuBenchmark.name.ilike(
-                        f"%{keyword}%"
+                        f"%{term}%"
                     )
 
                 )
+
+            return (
+
+                query
 
                 .limit(10)
 
@@ -4083,7 +4170,7 @@ from database.models import Product
 from database.models import ProductImage
 from database.models import ProductSpec
 from sqlalchemy import and_
-
+from sqlalchemy import or_
 class ProductService:
 
     def get_all_products(self):
@@ -4563,32 +4650,46 @@ class ProductService:
         finally:
 
             session.close()
-
+            
     def search_suggestions(
         self,
-        keyword
+        keyword,
+        limit=10
     ):
 
         session = SessionLocal()
 
         try:
 
-            return (
+            if not keyword:
+                return []
 
-                session
+            terms = [
 
-                .query(Product)
+                t.strip()
 
-                .filter(
+                for t in keyword.split()
+
+                if t.strip()
+
+            ]
+
+            query = session.query(Product)
+
+            for term in terms:
+
+                query = query.filter(
 
                     Product.title.ilike(
-                        f"%{keyword}%"
+                        f"%{term}%"
                     )
 
                 )
 
-                .limit(10)
+            return (
 
+                query
+                .limit(limit)
                 .all()
 
             )
@@ -4611,10 +4712,13 @@ from database.models import Product
 
 class SearchService:
 
+    from sqlalchemy import and_
+    from sqlalchemy import or_
+
     def search_products(
         self,
         keyword,
-        limit=100
+        limit=10000
     ):
 
         session = SessionLocal()
@@ -4623,38 +4727,44 @@ class SearchService:
 
             keyword = keyword.strip()
 
-            return (
+            terms = [
 
-                session
+                term.strip()
 
-                .query(Product)
+                for term in keyword.split()
 
-                .filter(
+                if term.strip()
+
+            ]
+
+            query = (
+                session.query(Product)
+            )
+
+            for term in terms:
+
+                query = query.filter(
 
                     or_(
 
                         Product.title.ilike(
-                            f"%{keyword}%"
+                            f"%{term}%"
                         ),
 
                         Product.vendor.ilike(
-                            f"%{keyword}%"
-                        ),
-
-                        Product.product_type.ilike(
-                            f"%{keyword}%"
-                        ),
-
-                        Product.tags.ilike(
-                            f"%{keyword}%"
+                            f"%{term}%"
                         )
 
                     )
 
                 )
 
+            return (
+
+                query
+
                 .order_by(
-                    Product.id.desc()
+                    Product.title.asc()
                 )
 
                 .limit(limit)
@@ -4662,7 +4772,6 @@ class SearchService:
                 .all()
 
             )
-
         finally:
 
             session.close()
@@ -8708,6 +8817,7 @@ Danh sách sản phẩm
     <div class="col-md-3">
 
         <select
+        id="vendor-select"
         name="vendor"
         class="form-select"
         >
@@ -8780,23 +8890,48 @@ Danh sách sản phẩm
         class="form-select"
         >
 
-            <option value="">
+            <option
+                value=""
+                {% if not selected_price %}
+                selected
+                {% endif %}
+            >
                 Tất cả giá
             </option>
 
-            <option value="0-5000000">
+            <option
+                value="0-5000000"
+                {% if selected_price == "0-5000000" %}
+                selected
+                {% endif %}
+            >
                 Dưới 5 triệu
             </option>
 
-            <option value="5000000-10000000">
+            <option
+                value="5000000-10000000"
+                {% if selected_price == "5000000-10000000" %}
+                selected
+                {% endif %}
+            >
                 5 - 10 triệu
             </option>
 
-            <option value="10000000-20000000">
+            <option
+                value="10000000-20000000"
+                {% if selected_price == "10000000-20000000" %}
+                selected
+                {% endif %}
+            >
                 10 - 20 triệu
             </option>
 
-            <option value="20000000+">
+            <option
+                value="20000000+"
+                {% if selected_price == "20000000+" %}
+                selected
+                {% endif %}
+            >
                 Trên 20 triệu
             </option>
 
@@ -8806,20 +8941,35 @@ Danh sách sản phẩm
 
     <div class="col-md-3">
 
-        <select
+       <select
         name="sort"
         class="form-select"
         >
 
-            <option value="">
+            <option
+                value="newest"
+                {% if selected_sort == "newest" %}
+                selected
+                {% endif %}
+            >
                 Mới nhất
             </option>
 
-            <option value="price_asc">
+            <option
+                value="price_asc"
+                {% if selected_sort == "price_asc" %}
+                selected
+                {% endif %}
+            >
                 Giá tăng dần
             </option>
 
-            <option value="price_desc">
+            <option
+                value="price_desc"
+                {% if selected_sort == "price_desc" %}
+                selected
+                {% endif %}
+            >
                 Giá giảm dần
             </option>
 
@@ -9190,7 +9340,32 @@ Next
 </ul>
 
 </nav>
+<link
+href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+rel="stylesheet"
+/>
 
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+
+$(document).ready(function(){
+
+    $('#vendor-select').select2({
+
+        placeholder: 'Tìm hãng...',
+
+        allowClear: true,
+
+        width: '100%'
+
+    });
+
+});
+
+</script>
 {% endblock %}
 
 

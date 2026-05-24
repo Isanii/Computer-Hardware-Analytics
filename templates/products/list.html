@@ -42,6 +42,7 @@ Danh sách sản phẩm
     <div class="col-md-3">
 
         <select
+        id="vendor-select"
         name="vendor"
         class="form-select"
         >
@@ -114,23 +115,48 @@ Danh sách sản phẩm
         class="form-select"
         >
 
-            <option value="">
+            <option
+                value=""
+                {% if not selected_price %}
+                selected
+                {% endif %}
+            >
                 Tất cả giá
             </option>
 
-            <option value="0-5000000">
+            <option
+                value="0-5000000"
+                {% if selected_price == "0-5000000" %}
+                selected
+                {% endif %}
+            >
                 Dưới 5 triệu
             </option>
 
-            <option value="5000000-10000000">
+            <option
+                value="5000000-10000000"
+                {% if selected_price == "5000000-10000000" %}
+                selected
+                {% endif %}
+            >
                 5 - 10 triệu
             </option>
 
-            <option value="10000000-20000000">
+            <option
+                value="10000000-20000000"
+                {% if selected_price == "10000000-20000000" %}
+                selected
+                {% endif %}
+            >
                 10 - 20 triệu
             </option>
 
-            <option value="20000000+">
+            <option
+                value="20000000+"
+                {% if selected_price == "20000000+" %}
+                selected
+                {% endif %}
+            >
                 Trên 20 triệu
             </option>
 
@@ -140,20 +166,35 @@ Danh sách sản phẩm
 
     <div class="col-md-3">
 
-        <select
+       <select
         name="sort"
         class="form-select"
         >
 
-            <option value="">
+            <option
+                value="newest"
+                {% if selected_sort == "newest" %}
+                selected
+                {% endif %}
+            >
                 Mới nhất
             </option>
 
-            <option value="price_asc">
+            <option
+                value="price_asc"
+                {% if selected_sort == "price_asc" %}
+                selected
+                {% endif %}
+            >
                 Giá tăng dần
             </option>
 
-            <option value="price_desc">
+            <option
+                value="price_desc"
+                {% if selected_sort == "price_desc" %}
+                selected
+                {% endif %}
+            >
                 Giá giảm dần
             </option>
 
@@ -524,5 +565,30 @@ Next
 </ul>
 
 </nav>
+<link
+href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+rel="stylesheet"
+/>
 
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+
+$(document).ready(function(){
+
+    $('#vendor-select').select2({
+
+        placeholder: 'Tìm hãng...',
+
+        allowClear: true,
+
+        width: '100%'
+
+    });
+
+});
+
+</script>
 {% endblock %}

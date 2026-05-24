@@ -25,13 +25,25 @@ class BenchmarkService:
 
             if keyword:
 
-                query = query.filter(
+                terms = [
 
-                    CpuBenchmark.name.contains(
-                        keyword
+                    term.strip()
+
+                    for term in keyword.split()
+
+                    if term.strip()
+
+            ]
+
+                for term in terms:
+
+                    query = query.filter(
+
+                        CpuBenchmark.name.ilike(
+                            f"%{term}%"
+                        )
+
                     )
-
-                )
 
             query = query.order_by(
                 CpuBenchmark.rank.asc()
@@ -73,14 +85,25 @@ class BenchmarkService:
 
             if keyword:
 
-                query = query.filter(
+                terms = [
 
-                    CpuBenchmark.name.contains(
-                        keyword
+                    term.strip()
+
+                    for term in keyword.split()
+
+                    if term.strip()
+
+                ]
+
+                for term in terms:
+
+                    query = query.filter(
+
+                        CpuBenchmark.name.ilike(
+                            f"%{term}%"
+                        )
+
                     )
-
-                )
-
             return query.count()
 
         finally:
@@ -104,13 +127,26 @@ class BenchmarkService:
 
             if keyword:
 
-                query = query.filter(
 
-                    GpuBenchmark.name.contains(
-                        keyword
+                terms = [
+
+                    term.strip()
+
+                    for term in keyword.split()
+
+                    if term.strip()
+
+                ]
+
+                for term in terms:
+
+                    query = query.filter(
+
+                        GpuBenchmark.name.ilike(
+                            f"%{term}%"
+                        )
+
                     )
-
-                )
 
             query = query.order_by(
                 GpuBenchmark.g3d_mark.desc()
@@ -152,13 +188,25 @@ class BenchmarkService:
 
             if keyword:
 
-                query = query.filter(
+                terms = [
 
-                    GpuBenchmark.name.contains(
-                        keyword
+                    term.strip()
+
+                    for term in keyword.split()
+
+                    if term.strip()
+
+                ]
+
+                for term in terms:
+
+                    query = query.filter(
+
+                        GpuBenchmark.name.ilike(
+                            f"%{term}%"
+                        )
+
                     )
-
-                )
 
             return query.count()
 
@@ -295,21 +343,36 @@ class BenchmarkService:
 
         try:
 
-            return (
+            if not keyword:
+                return []
 
-                session
+            terms = [
 
-                .query(
-                    CpuBenchmark
-                )
+                term.strip()
 
-                .filter(
+                for term in keyword.split()
+
+                if term.strip()
+
+            ]
+
+            query = session.query(
+                CpuBenchmark
+            )
+
+            for term in terms:
+
+                query = query.filter(
 
                     CpuBenchmark.name.ilike(
-                        f"%{keyword}%"
+                        f"%{term}%"
                     )
 
                 )
+
+            return (
+
+                query
 
                 .limit(10)
 
@@ -330,21 +393,36 @@ class BenchmarkService:
 
         try:
 
-            return (
+            if not keyword:
+                return []
 
-                session
+            terms = [
 
-                .query(
-                    GpuBenchmark
-                )
+                term.strip()
 
-                .filter(
+                for term in keyword.split()
+
+                if term.strip()
+
+            ]
+
+            query = session.query(
+                GpuBenchmark
+            )
+
+            for term in terms:
+
+                query = query.filter(
 
                     GpuBenchmark.name.ilike(
-                        f"%{keyword}%"
+                        f"%{term}%"
                     )
 
                 )
+
+            return (
+
+                query
 
                 .limit(10)
 

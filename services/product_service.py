@@ -4,7 +4,7 @@ from database.models import Product
 from database.models import ProductImage
 from database.models import ProductSpec
 from sqlalchemy import and_
-
+from sqlalchemy import or_
 class ProductService:
 
     def get_all_products(self):
@@ -484,32 +484,46 @@ class ProductService:
         finally:
 
             session.close()
-
+            
     def search_suggestions(
         self,
-        keyword
+        keyword,
+        limit=10
     ):
 
         session = SessionLocal()
 
         try:
 
-            return (
+            if not keyword:
+                return []
 
-                session
+            terms = [
 
-                .query(Product)
+                t.strip()
 
-                .filter(
+                for t in keyword.split()
+
+                if t.strip()
+
+            ]
+
+            query = session.query(Product)
+
+            for term in terms:
+
+                query = query.filter(
 
                     Product.title.ilike(
-                        f"%{keyword}%"
+                        f"%{term}%"
                     )
 
                 )
 
-                .limit(10)
+            return (
 
+                query
+                .limit(limit)
                 .all()
 
             )
