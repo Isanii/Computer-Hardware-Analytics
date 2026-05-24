@@ -1,7 +1,6 @@
 # PROJECT TREE
 
 KTLTPTDL
-├── .env
 ├── app.py
 ├── crawlers
 │   ├── __init__.py
@@ -15,8 +14,7 @@ KTLTPTDL
 │       ├── __init__.py
 │       ├── categories.py
 │       ├── crawler.py
-│       ├── parser.py
-│       └── services.py
+│       └── parser.py
 ├── data
 │   ├── processed
 │   └── raw
@@ -53,40 +51,26 @@ KTLTPTDL
 │   │   └── style.css
 │   ├── images
 │   └── js
-├── templates
-│   ├── base.html
-│   ├── benchmarks
-│   │   ├── cpu_compare.html
-│   │   ├── cpu_detail.html
-│   │   ├── cpu_list.html
-│   │   ├── gpu_compare.html
-│   │   ├── gpu_detail.html
-│   │   └── gpu_list.html
-│   ├── dashboard.html
-│   ├── home
-│   │   └── index.html
-│   ├── home.html
-│   └── products
-│       ├── detail.html
-│       ├── list.html
-│       └── search.html
-└── utils
-    ├── __init__.py
-    ├── helpers.py
-    ├── logger.py
-    ├── rate_limiter.py
-    └── text_normalizer.py
+└── templates
+    ├── base.html
+    ├── benchmarks
+    │   ├── cpu_compare.html
+    │   ├── cpu_detail.html
+    │   ├── cpu_list.html
+    │   ├── gpu_compare.html
+    │   ├── gpu_detail.html
+    │   └── gpu_list.html
+    ├── dashboard.html
+    ├── home
+    │   └── index.html
+    ├── home.html
+    └── products
+        ├── detail.html
+        ├── list.html
+        └── search.html
 
 
 # SOURCE CODE
-
-
-====================================================================================================
-FILE: .env
-====================================================================================================
-[LANGUAGE: ]
-
-
 
 
 ====================================================================================================
@@ -539,7 +523,7 @@ def main():
         print("Nhập đường dẫn project:")
         print("Enter = dùng thư mục hiện tại")
 
-        user_input = "C:/KTLTPTDL"
+        user_input = input("Path: ").strip()
 
         if user_input:
             root_path = user_input
@@ -1196,14 +1180,6 @@ class GearVNParser:
             })
 
         return specs
-
-
-====================================================================================================
-FILE: crawlers\gearvn\services.py
-====================================================================================================
-[LANGUAGE: python]
-
-
 
 
 ====================================================================================================
@@ -8700,29 +8676,7 @@ Danh sách sản phẩm
 
     <div>
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
-
-            <h2>
-
-                Danh sách sản phẩm
-
-            </h2>
-
-            <a
-
-                href="/export/products"
-
-                class="btn btn-success"
-
-            >
-
-                <i class="fa-solid fa-file-csv"></i>
-
-                Xuất CSV
-
-            </a>
-
-        </div>
+        <h2>Danh sách sản phẩm</h2>
 
         <p class="text-muted mb-0">
             Tìm thấy
@@ -8732,14 +8686,23 @@ Danh sách sản phẩm
 
     </div>
 
-    <span class="text-muted">
+    <div class="d-flex gap-2">
 
-        Trang {{ page }} / {{ total_pages }}
+        <a
+        href="/export/products"
+        class="btn btn-success"
+        >
+            <i class="fa-solid fa-file-csv"></i>
+            Xuất CSV
+        </a>
 
-    </span>
+        <span class="text-muted align-self-center">
+            Trang {{ page }} / {{ total_pages }}
+        </span>
+
+    </div>
 
 </div>
-
 <form method="get" class="row g-2 mb-4">
 
     <div class="col-md-3">
@@ -8987,7 +8950,9 @@ Danh sách sản phẩm
 
             {% for product in products %}
 
-            <div class="card h-100 position-relative">
+            <div class="col-md-4 mb-4">
+
+                <div class="card h-100 product-card position-relative">
 
             <!-- Badge giảm giá -->
 
@@ -9354,44 +9319,4 @@ mb-4
 </div>
 
 {% endblock %}
-
-
-====================================================================================================
-FILE: utils\helpers.py
-====================================================================================================
-[LANGUAGE: python]
-
-
-
-
-====================================================================================================
-FILE: utils\logger.py
-====================================================================================================
-[LANGUAGE: python]
-
-
-
-
-====================================================================================================
-FILE: utils\rate_limiter.py
-====================================================================================================
-[LANGUAGE: python]
-
-
-
-
-====================================================================================================
-FILE: utils\text_normalizer.py
-====================================================================================================
-[LANGUAGE: python]
-
-
-
-
-====================================================================================================
-FILE: utils\__init__.py
-====================================================================================================
-[LANGUAGE: python]
-
-
 

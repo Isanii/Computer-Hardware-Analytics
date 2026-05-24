@@ -419,7 +419,7 @@ def main():
         print("Nhập đường dẫn project:")
         print("Enter = dùng thư mục hiện tại")
 
-        user_input = "C:/KTLTPTDL"
+        user_input = input("Path: ").strip()
 
         if user_input:
             root_path = user_input
