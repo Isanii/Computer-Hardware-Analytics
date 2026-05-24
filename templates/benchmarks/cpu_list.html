@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}
+CPU Benchmark
+{% endblock %}
+
+{% block content %}
+
+<h2>
+
+CPU Benchmark
+
+</h2>
+
+<form
+method="get"
+class="mb-3"
+>
+
+<input
+
+class="form-control"
+
+name="q"
+
+value="{{ keyword or '' }}"
+
+placeholder="Tìm CPU..."
+
+>
+
+</form>
+
+<table
+class="table table-striped"
+>
+
+<thead>
+
+<tr>
+
+<th>Rank</th>
+
+<th>CPU</th>
+
+<th>CPU Mark</th>
+
+<th>Cores</th>
+
+<th>Threads</th>
+
+<th>TDP</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for cpu in cpus %}
+
+<tr>
+
+<td>
+{{ cpu.rank }}
+</td>
+
+<td>
+
+<a
+
+href="{{ url_for(
+'benchmark.cpu_detail',
+cpu_id=cpu.cpu_id
+) }}"
+
+class="text-decoration-none"
+
+>
+
+{{ cpu.name }}
+
+</a>
+
+</td>
+
+<td>
+{{ cpu.cpumark }}
+</td>
+
+<td>
+{{ cpu.cores }}
+</td>
+
+<td>
+{{ cpu.threads }}
+</td>
+
+<td>
+{{ cpu.tdp }}
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+<nav>
+
+<ul
+class="pagination"
+>
+
+{% for p in range(
+start_page,
+end_page + 1
+) %}
+
+<li
+class="
+page-item
+{% if p == page %}
+active
+{% endif %}
+"
+>
+
+<a
+
+class="page-link"
+
+href="{{ url_for(
+'benchmark.cpu_benchmark',
+page=p,
+q=keyword
+) }}"
+
+>
+
+{{ p }}
+
+</a>
+
+</li>
+
+{% endfor %}
+
+</ul>
+
+</nav>
+
+{% endblock %}

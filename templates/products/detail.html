@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ product.title }}
+{% endblock %}
+
+{% block content %}
+
+<div class="row">
+
+    <!-- Ảnh sản phẩm -->
+
+    <div class="col-md-5">
+
+        {% if images %}
+
+        <img
+
+            src="{{ images[0].image_url }}"
+
+            class="img-fluid rounded shadow"
+
+            alt="{{ product.title }}"
+
+        >
+
+        {% endif %}
+
+        <!-- Thumbnail -->
+
+        <div class="row mt-3">
+
+            {% for image in images[:4] %}
+
+            <div class="col-3">
+
+                <img
+
+                    src="{{ image.image_url }}"
+
+                    class="img-fluid border rounded"
+
+                    alt="thumbnail"
+
+                >
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+    <!-- Thông tin sản phẩm -->
+
+    <div class="col-md-7">
+
+        <h2>
+
+            {{ product.title }}
+
+        </h2>
+
+        <hr>
+
+        <p>
+
+            <strong>Hãng:</strong>
+
+            {{ product.vendor }}
+
+        </p>
+
+        <h3 class="text-danger">
+
+            {{ "{:,.0f}".format(product.price) }}
+
+            VNĐ
+
+        </h3>
+
+        {% if product.compare_at_price %}
+
+        <p
+        class="
+        text-muted
+        text-decoration-line-through
+        "
+        >
+
+            {{ "{:,.0f}".format(
+                product.compare_at_price
+            ) }}
+
+            VNĐ
+
+        </p>
+
+        {% endif %}
+
+        <div class="mt-4">
+
+            <button
+            class="btn btn-success btn-lg"
+            >
+
+                Mua ngay
+
+            </button>
+
+            <a
+
+            href="/products/view"
+
+            class="btn btn-outline-secondary btn-lg"
+
+            >
+
+                Quay lại
+
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+<hr class="my-5">
+
+<!-- Thông số -->
+
+<h3 class="mb-3">
+
+    Thông số kỹ thuật
+
+</h3>
+
+<div class="table-responsive">
+
+<table
+class="
+table
+table-striped
+table-bordered
+"
+>
+
+    <thead>
+
+        <tr>
+
+            <th width="35%">
+
+                Thuộc tính
+
+            </th>
+
+            <th>
+
+                Giá trị
+
+            </th>
+
+        </tr>
+
+    </thead>
+
+    <tbody>
+
+    {% for spec in specs %}
+
+        <tr>
+
+            <td>
+
+                {{ spec.spec_name }}
+
+            </td>
+
+            <td>
+
+                {{ spec.spec_value }}
+
+            </td>
+
+        </tr>
+
+    {% endfor %}
+
+    </tbody>
+
+</table>
+
+</div>
+
+<hr class="my-5">
+
+<!-- Mô tả -->
+
+<h3>
+
+    Mô tả sản phẩm
+
+</h3>
+
+<div
+class="
+card
+card-body
+shadow-sm
+"
+>
+
+    {{ product.description|safe }}
+
+</div>
+
+{% endblock %}

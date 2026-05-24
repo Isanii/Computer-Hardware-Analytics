@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}
+So sánh GPU
+{% endblock %}
+
+{% block content %}
+
+<h2 class="mb-4">
+
+    So sánh GPU
+
+</h2>
+
+<form
+method="get"
+class="row g-3 mb-4"
+>
+
+    <div class="col-md-5">
+
+        <select
+        name="gpu1"
+        class="form-select"
+        >
+
+            <option value="">
+
+                Chọn GPU thứ nhất
+
+            </option>
+
+            {% for gpu in gpu_list %}
+
+            <option
+
+            value="{{ gpu.gpu_id }}"
+
+            {% if gpu1 and gpu.id == gpu1.id %}
+            selected
+            {% endif %}
+
+            >
+
+                {{ gpu.name }}
+
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+    <div class="col-md-5">
+
+        <select
+        name="gpu2"
+        class="form-select"
+        >
+
+            <option value="">
+
+                Chọn GPU thứ hai
+
+            </option>
+
+            {% for gpu in gpu_list %}
+
+            <option
+
+            value="{{ gpu.gpu_id }}"
+
+            {% if gpu2 and gpu.id == gpu2.id %}
+            selected
+            {% endif %}
+
+            >
+
+                {{ gpu.name }}
+
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+    <div class="col-md-2">
+
+        <button
+        class="btn btn-primary w-100"
+        >
+
+            So sánh
+
+        </button>
+
+    </div>
+
+</form>
+
+{% if gpu1 and gpu2 %}
+
+<div class="card">
+
+    <div class="card-body">
+
+        <table
+        class="
+        table
+        table-bordered
+        "
+        >
+
+            <thead>
+
+            <tr>
+
+                <th>
+
+                    Thuộc tính
+
+                </th>
+
+                <th>
+
+                    {{ gpu1.name }}
+
+                </th>
+
+                <th>
+
+                    {{ gpu2.name }}
+
+                </th>
+
+            </tr>
+
+            </thead>
+
+            <tbody>
+
+            <tr>
+
+                <td>G3D Mark</td>
+
+                <td>
+                    {{ "{:,.0f}".format(gpu1.g3d_mark or 0) }}
+                </td>
+
+                <td>
+                    {{ "{:,.0f}".format(gpu2.g3d_mark or 0) }}
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>G2D Mark</td>
+
+                <td>
+                    {{ "{:,.0f}".format(gpu1.g2d_mark or 0) }}
+                </td>
+
+                <td>
+                    {{ "{:,.0f}".format(gpu2.g2d_mark or 0) }}
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>VRAM</td>
+
+                <td>
+                    {{ gpu1.memory_size }}
+                </td>
+
+                <td>
+                    {{ gpu2.memory_size }}
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>Core Clock</td>
+
+                <td>
+                    {{ gpu1.core_clock }}
+                </td>
+
+                <td>
+                    {{ gpu2.core_clock }}
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>Memory Clock</td>
+
+                <td>
+                    {{ gpu1.memory_clock }}
+                </td>
+
+                <td>
+                    {{ gpu2.memory_clock }}
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>TDP</td>
+
+                <td>
+                    {{ gpu1.tdp }} W
+                </td>
+
+                <td>
+                    {{ gpu2.tdp }} W
+                </td>
+
+            </tr>
+
+            </tbody>
+
+        </table>
+        <hr class="my-4">
+
+        <div class="card shadow-sm">
+
+            <div class="card-body">
+
+                <h4>
+
+                    So sánh hiệu năng GPU
+
+                </h4>
+
+                <canvas
+                    id="gpuCompareChart"
+                ></canvas>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+{% endif %}
+{% if gpu1 and gpu2 %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+new Chart(
+
+    document.getElementById(
+        "gpuCompareChart"
+    ),
+
+    {
+
+        type: "bar",
+
+        data: {
+
+            labels:
+            {{ chart_labels|tojson }},
+
+            datasets: [
+
+                {
+
+                    label:
+                    "G3D Mark",
+
+                    data:
+                    {{ g3d_values|tojson }}
+
+                },
+
+                {
+
+                    label:
+                    "G2D Mark",
+
+                    data:
+                    {{ g2d_values|tojson }}
+
+                },
+
+                {
+
+                    label:
+                    "TDP",
+
+                    data:
+                    {{ tdp_values|tojson }}
+
+                }
+
+            ]
+
+        }
+
+    }
+
+);
+
+</script>
+
+{% endif %}
+{% endblock %}

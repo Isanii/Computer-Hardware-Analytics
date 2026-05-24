@@ -1,0 +1,7839 @@
+# PROJECT TREE
+
+KTLTPTDL
+├── .env
+├── app.py
+├── crawlers
+│   ├── __init__.py
+│   ├── benchmark
+│   │   ├── __init__.py
+│   │   ├── benchmark_parser.py
+│   │   ├── cpu_scraper.py
+│   │   ├── gpu_scraper.py
+│   │   └── scraper.py
+│   └── gearvn
+│       ├── __init__.py
+│       ├── categories.py
+│       ├── crawler.py
+│       ├── parser.py
+│       └── services.py
+├── data
+│   ├── processed
+│   └── raw
+│       ├── cpu
+│       ├── gearvn
+│       └── gpu
+├── database
+│   ├── __init__.py
+│   ├── db.py
+│   ├── models.py
+│   └── seed.py
+├── dump_project_full_txt_output.py
+├── project_dump.txt
+├── requirements.txt
+├── reset_db.py
+├── routes
+│   ├── __init__.py
+│   ├── api.py
+│   ├── benchmarks.py
+│   ├── dashboard.py
+│   ├── home.py
+│   ├── products.py
+│   └── search.py
+├── services
+│   ├── __init__.py
+│   ├── benchmark_service.py
+│   ├── dashboard_service.py
+│   ├── home_service.py
+│   ├── product_service.py
+│   ├── recommendation_service.py
+│   └── search_service.py
+├── static
+│   ├── css
+│   │   └── style.css
+│   ├── images
+│   └── js
+├── templates
+│   ├── base.html
+│   ├── benchmarks
+│   │   ├── cpu_compare.html
+│   │   ├── cpu_detail.html
+│   │   ├── cpu_list.html
+│   │   ├── gpu_compare.html
+│   │   ├── gpu_detail.html
+│   │   └── gpu_list.html
+│   ├── dashboard.html
+│   ├── home
+│   │   └── index.html
+│   ├── home.html
+│   └── products
+│       ├── detail.html
+│       ├── list.html
+│       └── search.html
+└── utils
+    ├── __init__.py
+    ├── helpers.py
+    ├── logger.py
+    ├── rate_limiter.py
+    └── text_normalizer.py
+
+
+# SOURCE CODE
+
+
+====================================================================================================
+FILE: .env
+====================================================================================================
+[LANGUAGE: ]
+
+
+
+
+====================================================================================================
+FILE: app.py
+====================================================================================================
+[LANGUAGE: python]
+
+from flask import Flask
+
+from routes.home import home_bp
+from routes.products import product_bp
+from routes.search import search_bp
+from routes.benchmarks import benchmark_bp
+from routes.dashboard import dashboard_bp
+
+app = Flask(__name__)
+
+app.register_blueprint(home_bp)
+app.register_blueprint(product_bp)
+app.register_blueprint(search_bp)
+app.register_blueprint(benchmark_bp)
+app.register_blueprint(dashboard_bp)
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+====================================================================================================
+FILE: dump_project_full_txt_output.py
+====================================================================================================
+[LANGUAGE: python]
+
+# -*- coding: utf-8 -*-
+"""
+dump_project_full.py
+
+Dump toàn bộ project:
+- In cây thư mục
+- Dump source code
+- Xuất ra project_dump.txt
+- Hỗ trợ nhiều loại project
+
+Chạy:
+    python dump_project_full.py "D:\\Project"
+
+Hoặc:
+    python dump_project_full.py
+"""
+
+import os
+import sys
+import ctypes
+
+
+# =========================================================
+# CONFIG
+# =========================================================
+
+IGNORE_DIRS = {
+    '.git',
+    '.vs',
+    'bin',
+    'obj',
+    '__pycache__',
+    'node_modules',
+    'venv',
+    '.idea',
+    '.vscode',
+    'dist',
+    'build',
+    '.next',
+    '.nuxt',
+    '.cache'
+}
+
+ALLOW_EXTENSIONS = {
+
+    # Python
+    '.py',
+
+    # .NET
+    '.cs',
+    '.csproj',
+    '.sln',
+    '.config',
+    '.xaml',
+
+    # Web
+    '.html',
+    '.css',
+    '.scss',
+    '.js',
+    '.ts',
+    '.tsx',
+    '.jsx',
+
+    # Config
+    '.json',
+    '.xml',
+    '.yml',
+    '.yaml',
+    '.ini',
+    '.env',
+
+    # Database
+    '.sql',
+
+    # Text
+    '.txt',
+    '.md',
+    '.csv',
+
+    # Other languages
+    '.php',
+    '.java',
+    '.kt',
+    '.go',
+    '.rs',
+    '.cpp',
+    '.c',
+    '.h',
+
+    # Git
+    '.gitignore',
+    '.gitattributes'
+}
+
+MEDIA_EXTENSIONS = {
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.gif',
+    '.svg',
+    '.ico',
+    '.webp',
+    '.bmp'
+}
+
+SPECIAL_FILES = {
+    '.env',
+    '.gitignore',
+    '.gitattributes'
+}
+
+OUTPUT_FILE = "project_dump.txt"
+
+
+# =========================================================
+# ADMIN
+# =========================================================
+
+def is_running_as_admin():
+
+    if os.name != "nt":
+        return False
+
+    try:
+        return bool(
+            ctypes.windll.shell32.IsUserAnAdmin()
+        )
+
+    except Exception:
+        return False
+
+
+def relaunch_as_admin():
+
+    if os.name != "nt":
+        return
+
+    if is_running_as_admin():
+        return
+
+    script = os.path.abspath(sys.argv[0])
+
+    params = ' '.join(
+        f'"{x}"'
+        for x in [script] + sys.argv[1:]
+    )
+
+    try:
+
+        ctypes.windll.shell32.ShellExecuteW(
+            None,
+            "runas",
+            sys.executable,
+            params,
+            None,
+            1
+        )
+
+        sys.exit(0)
+
+    except Exception as e:
+
+        print("Không thể nâng quyền admin.")
+        print("Lỗi:", e)
+
+        sys.exit(1)
+
+
+# =========================================================
+# UTILS
+# =========================================================
+
+def write_line(text, file_handle=None):
+
+    print(text)
+
+    if file_handle:
+        file_handle.write(text + "\n")
+
+
+def get_language(ext):
+
+    mapping = {
+
+        '.py': 'python',
+        '.cs': 'csharp',
+        '.js': 'javascript',
+        '.ts': 'typescript',
+        '.tsx': 'tsx',
+        '.jsx': 'jsx',
+        '.html': 'html',
+        '.css': 'css',
+        '.scss': 'scss',
+        '.json': 'json',
+        '.xml': 'xml',
+        '.sql': 'sql',
+        '.java': 'java',
+        '.cpp': 'cpp',
+        '.c': 'c',
+        '.h': 'c',
+        '.php': 'php',
+        '.go': 'go',
+        '.rs': 'rust',
+        '.yml': 'yaml',
+        '.yaml': 'yaml',
+        '.md': 'markdown'
+    }
+
+    return mapping.get(ext, '')
+
+
+# =========================================================
+# TREE
+# =========================================================
+
+def build_tree(root_path, out_file):
+
+    def walk(current_dir, prefix=""):
+
+        try:
+            items = os.listdir(current_dir)
+
+        except PermissionError:
+
+            write_line(
+                f"{prefix}└── [ACCESS DENIED]",
+                out_file
+            )
+
+            return
+
+        items = sorted(items, key=str.lower)
+
+        filtered = []
+
+        for item in items:
+
+            full = os.path.join(current_dir, item)
+
+            if os.path.isdir(full) and item in IGNORE_DIRS:
+                continue
+
+            filtered.append(item)
+
+        for index, item in enumerate(filtered):
+
+            full_path = os.path.join(current_dir, item)
+
+            is_last = index == len(filtered) - 1
+
+            connector = "└── " if is_last else "├── "
+
+            write_line(
+                f"{prefix}{connector}{item}",
+                out_file
+            )
+
+            if os.path.isdir(full_path):
+
+                extension = "    " if is_last else "│   "
+
+                walk(
+                    full_path,
+                    prefix + extension
+                )
+
+    write_line("# PROJECT TREE", out_file)
+
+    write_line("", out_file)
+
+    write_line(
+        os.path.basename(root_path),
+        out_file
+    )
+
+    walk(root_path)
+
+    write_line("", out_file)
+
+
+# =========================================================
+# SOURCE DUMP
+# =========================================================
+
+def dump_source_code(root_path, out_file):
+
+    write_line("\n# SOURCE CODE\n", out_file)
+
+    for root, dirs, files in os.walk(root_path):
+
+        dirs[:] = [
+            d for d in dirs
+            if d not in IGNORE_DIRS
+        ]
+
+        for file in files:
+
+            ext = os.path.splitext(file)[1].lower()
+
+            file_path = os.path.join(root, file)
+
+            rel_path = os.path.relpath(
+                file_path,
+                root_path
+            )
+
+            # =========================================
+            # MEDIA FILE
+            # =========================================
+
+            if ext in MEDIA_EXTENSIONS:
+
+                write_line(
+                    "\n" + "=" * 100,
+                    out_file
+                )
+
+                write_line(
+                    f"FILE: {rel_path}",
+                    out_file
+                )
+
+                write_line(
+                    "=" * 100,
+                    out_file
+                )
+
+                write_line(
+                    "[MEDIA FILE - SKIPPED]",
+                    out_file
+                )
+
+                continue
+
+            # =========================================
+            # CHECK EXTENSION
+            # =========================================
+
+            if (
+                ext not in ALLOW_EXTENSIONS
+                and file not in SPECIAL_FILES
+            ):
+                continue
+
+            # =========================================
+            # READ FILE
+            # =========================================
+
+            try:
+
+                with open(
+                    file_path,
+                    "r",
+                    encoding="utf-8",
+                    errors="ignore"
+                ) as f:
+
+                    content = f.read()
+
+                write_line(
+                    "\n" + "=" * 100,
+                    out_file
+                )
+
+                write_line(
+                    f"FILE: {rel_path}",
+                    out_file
+                )
+
+                write_line(
+                    "=" * 100,
+                    out_file
+                )
+
+                lang = get_language(ext)
+
+                write_line(
+                    f"[LANGUAGE: {lang}]",
+                    out_file
+                )
+
+                write_line("", out_file)
+
+                out_file.write(content)
+
+                if not content.endswith("\n"):
+                    out_file.write("\n")
+
+                write_line("", out_file)
+
+                print(f"[OK] {rel_path}")
+
+            except Exception as e:
+
+                print(
+                    f"[ERROR] {rel_path} -> {e}"
+                )
+
+
+# =========================================================
+# MAIN
+# =========================================================
+
+def main():
+
+    relaunch_as_admin()
+
+    # ==========================================
+    # GET PATH
+    # ==========================================
+
+    if len(sys.argv) >= 2:
+
+        root_path = sys.argv[1]
+
+    else:
+
+        print("Nhập đường dẫn project:")
+        print("Enter = dùng thư mục hiện tại")
+
+        user_input = "C:/KTLTPTDL"
+
+        if user_input:
+            root_path = user_input
+        else:
+            root_path = os.getcwd()
+
+    root_path = os.path.abspath(root_path)
+
+    if not os.path.isdir(root_path):
+
+        print(f"❌ Không tồn tại thư mục: {root_path}")
+
+        sys.exit(1)
+
+    # ==========================================
+    # OUTPUT FILE
+    # ==========================================
+
+    output_path = os.path.join(
+        os.path.dirname(
+            os.path.abspath(__file__)
+        ),
+        OUTPUT_FILE
+    )
+
+    # ==========================================
+    # START
+    # ==========================================
+
+    try:
+
+        with open(
+            output_path,
+            "w",
+            encoding="utf-8"
+        ) as out_file:
+
+            build_tree(
+                root_path,
+                out_file
+            )
+
+            dump_source_code(
+                root_path,
+                out_file
+            )
+
+        print("\n✅ Dump hoàn tất.")
+
+        print(
+            f"📄 File output: {output_path}"
+        )
+
+    except Exception as e:
+
+        print("❌ Có lỗi:", e)
+
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
+
+
+====================================================================================================
+FILE: project_dump.txt
+====================================================================================================
+[LANGUAGE: ]
+
+
+
+
+====================================================================================================
+FILE: requirements.txt
+====================================================================================================
+[LANGUAGE: ]
+
+
+
+
+====================================================================================================
+FILE: reset_db.py
+====================================================================================================
+[LANGUAGE: python]
+
+from database.db import engine
+from database.models import Base
+
+
+def reset_database():
+
+    print("=" * 60)
+    print("XÓA TOÀN BỘ BẢNG")
+    print("=" * 60)
+
+    # tự động xóa tất cả bảng khai báo trong models.py
+    Base.metadata.drop_all(bind=engine)
+
+    print("Đã xóa toàn bộ bảng")
+
+    print()
+    print("=" * 60)
+    print("TẠO LẠI TOÀN BỘ BẢNG")
+    print("=" * 60)
+
+    # tự động tạo lại
+    Base.metadata.create_all(bind=engine)
+
+    print("Đã tạo lại toàn bộ bảng")
+
+
+if __name__ == "__main__":
+
+    reset_database()
+
+
+====================================================================================================
+FILE: crawlers\__init__.py
+====================================================================================================
+[LANGUAGE: python]
+
+
+
+
+====================================================================================================
+FILE: crawlers\benchmark\benchmark_parser.py
+====================================================================================================
+[LANGUAGE: python]
+
+def parse_int(value):
+
+    if value is None:
+        return None
+
+    value = str(value)
+
+    value = (
+        value
+        .replace(",", "")
+        .replace("$", "")
+        .strip()
+    )
+
+    if value == "":
+        return None
+
+    try:
+        return int(float(value))
+    except:
+        return None
+
+
+def parse_float(value):
+
+    if value is None:
+        return None
+
+    value = str(value)
+
+    value = (
+        value
+        .replace(",", "")
+        .replace("$", "")
+        .strip()
+    )
+
+    if value == "":
+        return None
+
+    try:
+        return float(value)
+    except:
+        return None
+
+
+====================================================================================================
+FILE: crawlers\benchmark\cpu_scraper.py
+====================================================================================================
+[LANGUAGE: python]
+
+from crawlers.benchmark.scraper import Scraper
+
+
+class CPUScraper:
+
+    def get_all_cpus(self):
+
+        scraper = Scraper(
+            "www.cpubenchmark.net"
+        )
+
+        return scraper.items
+
+
+====================================================================================================
+FILE: crawlers\benchmark\gpu_scraper.py
+====================================================================================================
+[LANGUAGE: python]
+
+from crawlers.benchmark.scraper import Scraper
+
+
+class GPUScraper:
+
+    def get_all_gpus(self):
+
+        scraper = Scraper(
+            "www.videocardbenchmark.net"
+        )
+
+        return scraper.items
+
+
+====================================================================================================
+FILE: crawlers\benchmark\scraper.py
+====================================================================================================
+[LANGUAGE: python]
+
+import requests
+import time
+import re
+import datetime
+
+
+class Scraper:
+
+    def __init__(
+        self,
+        domain="www.cpubenchmark.net"
+    ):
+
+        if domain not in [
+
+            "www.cpubenchmark.net",
+
+            "www.videocardbenchmark.net",
+
+            "www.harddrivebenchmark.net"
+
+        ]:
+
+            raise ValueError(
+                "Invalid domain"
+            )
+
+        self.domain = domain
+
+        self.url = {
+
+            "www.cpubenchmark.net":
+            (
+                "https://www.cpubenchmark.net/"
+                "CPU_mega_page.html"
+            ),
+
+            "www.videocardbenchmark.net":
+            (
+                "https://www.videocardbenchmark.net/"
+                "GPU_mega_page.html"
+            ),
+
+            "www.harddrivebenchmark.net":
+            (
+                "https://www.harddrivebenchmark.net/"
+                "hdd-mega-page.html"
+            )
+
+        }[domain]
+
+        self.scrape()
+
+    def scrape(self):
+
+        session = requests.Session()
+
+        headers = {
+
+            "User-Agent":
+            (
+                "Mozilla/5.0 "
+                "(Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 "
+                "(KHTML, like Gecko) "
+                "Chrome/136.0 Safari/537.36"
+            ),
+
+            "Accept-Language":
+            "en-US,en;q=0.9",
+
+            "Referer":
+            self.url,
+
+            "X-Requested-With":
+            "XMLHttpRequest",
+
+            "Accept":
+            (
+                "application/json,"
+                " text/javascript,"
+                " */*; q=0.01"
+            )
+        }
+
+        # Lấy cookie trước
+
+        session.get(
+
+            self.url,
+
+            headers=headers,
+
+            timeout=30
+
+        )
+
+        # Gọi API data
+
+        api_url = (
+
+            f"https://{self.domain}/data/"
+            f"?_={int(time.time()*1000)}"
+
+        )
+
+        response = session.get(
+
+            api_url,
+
+            headers=headers,
+
+            timeout=30
+
+        )
+
+        response.raise_for_status()
+
+        data = response.json()
+
+        self.items = data["data"]
+
+        return self.items
+
+    def get_item(
+        self,
+        item_id
+    ):
+
+        for item in self.items:
+
+            if str(item["id"]) == str(item_id):
+
+                return item
+
+        return None
+
+    def search(
+        self,
+        keyword
+    ):
+
+        keyword = keyword.lower()
+
+        result = []
+
+        for item in self.items:
+
+            if keyword in item["name"].lower():
+
+                result.append(item)
+
+        return result
+
+
+====================================================================================================
+FILE: crawlers\benchmark\__init__.py
+====================================================================================================
+[LANGUAGE: python]
+
+
+
+
+====================================================================================================
+FILE: crawlers\gearvn\categories.py
+====================================================================================================
+[LANGUAGE: python]
+
+GEARVN_APIS = {
+
+    "cpu":
+    "https://gearvn.com/collections/cpu-bo-vi-xu-ly/products.json",
+
+    "gpu":
+    "https://gearvn.com/collections/vga-card-man-hinh/products.json",
+
+    "psu":
+    "https://gearvn.com/collections/psu-nguon-may-tinh/products.json",
+
+    "mainboard":
+    "https://gearvn.com/collections/mainboard-bo-mach-chu/products.json",
+
+    "ram":
+    "https://gearvn.com/collections/ram-pc/products.json",
+
+    "ssd":
+    "https://gearvn.com/collections/ssd-o-cung-the-ran/products.json",
+
+    "hdd":
+    "https://gearvn.com/collections/hdd-o-cung-pc/products.json",
+
+    "keyboard":
+    "https://gearvn.com/collections/ban-phim-may-tinh/products.json",
+
+    "mouse":
+    "https://gearvn.com/collections/chuot-may-tinh/products.json",
+
+    "monitor":
+    "https://gearvn.com/collections/man-hinh/products.json",
+
+    "accessories":
+    "https://gearvn.com/collections/phu-kien/products.json",
+
+    "case":
+    "https://gearvn.com/collections/case-thung-may-tinh/products.json",
+
+    "fan":
+    "https://gearvn.com/collections/fan-rgb-tan-nhiet-pc/products.json",
+
+    "headset":
+    "https://gearvn.com/collections/tai-nghe-may-tinh/products.json",
+
+    "chair":
+    "https://gearvn.com/collections/ghe-gia-tot/products.json"
+}
+
+
+====================================================================================================
+FILE: crawlers\gearvn\crawler.py
+====================================================================================================
+[LANGUAGE: python]
+
+import requests
+
+from crawlers.gearvn.categories import GEARVN_APIS
+
+
+class GearVNCrawler:
+
+    def get_products(self, category):
+
+        all_products = []
+
+        page = 1
+
+        while True:
+
+            url = (
+                f"{GEARVN_APIS[category]}"
+                f"?page={page}"
+            )
+
+            response = requests.get(
+                url,
+                timeout=30
+            )
+
+            response.raise_for_status()
+
+            products = response.json()["products"]
+
+            if not products:
+                break
+
+            print(
+                f"[{category}] "
+                f"page number {page}: "
+                f"{len(products)} products"
+            )
+
+            all_products.extend(products)
+
+            page += 1
+
+        return all_products
+
+
+====================================================================================================
+FILE: crawlers\gearvn\parser.py
+====================================================================================================
+[LANGUAGE: python]
+
+from bs4 import BeautifulSoup
+
+class GearVNParser:
+
+    #Parse_db.products
+    def parse_product(self, raw_product):
+
+        variant = {}
+
+        if raw_product.get("variants"):
+            variant = raw_product["variants"][0]
+
+        image_url = None
+
+        if raw_product.get("image"):
+            image_url = raw_product["image"].get("src")
+
+        return {
+
+            # id sản phẩm GearVN
+            "product_id":
+                str(raw_product.get("id")),
+
+            # mã SKU
+            "sku":
+                variant.get("sku"),
+
+            # tên sản phẩm
+            "title":
+                raw_product.get("title"),
+
+            # hãng
+            "vendor":
+                raw_product.get("vendor"),
+
+            # loại sản phẩm
+            "product_type":
+                raw_product.get("product_type"),
+
+            # slug url
+            "handle":
+                raw_product.get("handle"),
+
+            # giá bán
+            "price":
+                float(
+                    variant.get("price", 0)
+                ),
+
+            # giá cũ
+            "compare_at_price":
+                float(
+                    variant.get(
+                        "compare_at_price",
+                        0
+                    )
+                ),
+
+            # còn hàng hay không
+            "available":
+                raw_product.get("available"),
+
+            # ảnh đại diện
+            "image_url":
+                image_url,
+
+            # mô tả html
+            "description":
+                raw_product.get(
+                    "body_html"
+                ),
+
+            # tags
+            "tags":
+                raw_product.get("tags")
+        }
+    
+    #Parse_db.product_images
+    def parse_images(self, raw_product):
+
+        result = []
+
+        images = raw_product.get(
+            "images",
+            []
+        )
+
+        product_id = str(
+            raw_product.get("id")
+        )
+
+        for image in images:
+
+            result.append({
+
+                "product_id":
+                    product_id,
+
+                "image_url":
+                    image.get("src")
+            })
+
+        return result
+
+
+    #Parse_db.specifications
+    def parse_specs(self, raw_product):
+
+        specs = []
+
+        product_id = str(
+            raw_product.get("id")
+        )
+
+        html = raw_product.get(
+            "body_html",
+            ""
+        )
+
+        soup = BeautifulSoup(
+            html,
+            "html.parser"
+        )
+
+        rows = soup.find_all("tr")
+
+        for row in rows:
+
+            cols = row.find_all("td")
+
+            if len(cols) < 2:
+                continue
+
+            name = (
+                cols[0]
+                .get_text(" ", strip=True)
+            )
+
+            value = (
+                cols[1]
+                .get_text(" ", strip=True)
+            )
+
+            specs.append({
+
+                "product_id":
+                    product_id,
+
+                "spec_name":
+                    name,
+
+                "spec_value":
+                    value
+            })
+
+        return specs
+
+
+====================================================================================================
+FILE: crawlers\gearvn\services.py
+====================================================================================================
+[LANGUAGE: python]
+
+
+
+
+====================================================================================================
+FILE: crawlers\gearvn\__init__.py
+====================================================================================================
+[LANGUAGE: python]
+
+
+
+
+====================================================================================================
+FILE: database\db.py
+====================================================================================================
+[LANGUAGE: python]
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+# Tên SQL Server 
+SERVER = "DESKTOP-56H5RB4"
+
+# Database đã tạo sẵn
+DATABASE = "LinhKienMayTinh"
+
+# Driver thường dùng
+DRIVER = "ODBC Driver 17 for SQL Server"
+
+connection_string = (
+    f"mssql+pyodbc://@{SERVER}/{DATABASE}"
+    f"?driver={DRIVER}"
+    "&trusted_connection=yes"
+)
+
+engine = create_engine(connection_string)
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
+
+
+====================================================================================================
+FILE: database\models.py
+====================================================================================================
+[LANGUAGE: python]
+
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import Column
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import Float
+from sqlalchemy import Text
+from sqlalchemy import Boolean
+from sqlalchemy import Unicode
+from sqlalchemy import UnicodeText
+from sqlalchemy import Index
+
+class Base(DeclarativeBase):
+    pass
+
+
+class Product(Base):
+
+    __tablename__ = "products"
+
+    # khóa chính trong database
+    id = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True
+    )
+
+    # id gốc từ GearVN
+    product_id = Column(
+        String(100),
+        unique=True
+    )
+
+    sku = Column(String(100))
+
+    title = Column(Unicode(1000))
+
+    vendor = Column(Unicode(200))
+
+    product_type = Column(Unicode(200))
+
+    handle = Column(Unicode(500))
+
+    price = Column(Float)
+
+    compare_at_price = Column(Float)
+
+    available = Column(Boolean)
+
+    image_url = Column(Text)
+
+    description = Column(UnicodeText)
+
+    tags = Column(UnicodeText)
+
+
+#Product Image
+class ProductImage(Base):
+
+    __tablename__ = "product_images"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True
+    )
+
+    product_id = Column(
+        String(100),
+        nullable=False
+    )
+
+    image_url = Column(Text)
+
+
+#Product Specification
+class ProductSpec(Base):
+
+    __tablename__ = "product_specs"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True
+    )
+
+    product_id = Column(
+        String(100),
+        nullable=False
+    )
+
+    spec_name = Column(
+        Unicode(500)
+    )
+
+    spec_value = Column(
+        UnicodeText
+    )
+
+
+Index("idx_product_images_product_id",ProductImage.product_id)
+Index("idx_product_specs_product_id",ProductSpec.product_id)
+
+class CpuBenchmark(Base):
+
+    __tablename__ = "cpu_benchmarks"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True
+    )
+
+    cpu_id = Column(
+        String(50),
+        unique=True
+    )
+
+    name = Column(
+        Unicode(500)
+    )
+
+    cpumark = Column(Float)
+
+    thread_mark = Column(Float)
+
+    cores = Column(Integer)
+
+    threads = Column(Integer)
+
+    tdp = Column(Float)
+
+    speed = Column(Float)
+
+    turbo = Column(Float)
+
+    price = Column(Float)
+
+    samples = Column(Integer)
+
+    socket = Column(
+        Unicode(100)
+    )
+
+    category = Column(
+        Unicode(100)
+    )
+
+    rank = Column(Integer)
+
+class GpuBenchmark(Base):
+
+    __tablename__ = "gpu_benchmarks"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True
+    )
+
+    gpu_id = Column(
+        String(50),
+        unique=True
+    )
+
+    name = Column(
+        Unicode(500)
+    )
+
+    g3d_mark = Column(Float)
+
+    g2d_mark = Column(Float)
+
+    tdp = Column(Float)
+
+    price = Column(Float)
+
+    samples = Column(Integer)
+
+    memory_size = Column(
+        Unicode(100)
+    )
+
+    bus = Column(
+        Unicode(100)
+    )
+
+    core_clock = Column(
+        Unicode(100)
+    )
+
+    memory_clock = Column(
+        Unicode(100)
+    )
+
+    category = Column(
+        Unicode(100)
+    )
+
+    rank = Column(Integer)
+Index(
+    "idx_cpu_rank",
+    CpuBenchmark.rank
+)
+
+Index(
+    "idx_gpu_rank",
+    GpuBenchmark.rank
+)
+
+
+====================================================================================================
+FILE: database\seed.py
+====================================================================================================
+[LANGUAGE: python]
+
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import as_completed
+
+import time
+
+from sqlalchemy import func
+
+from database.db import SessionLocal
+from database.db import engine
+
+#Import các Model
+from database.models import Base
+from database.models import Product
+from database.models import ProductImage
+from database.models import ProductSpec
+
+from crawlers.gearvn.crawler import GearVNCrawler
+from crawlers.gearvn.parser import GearVNParser
+from crawlers.gearvn.categories import GEARVN_APIS
+
+
+
+from database.models import (
+    CpuBenchmark,
+    GpuBenchmark
+)
+
+from crawlers.benchmark.cpu_scraper import (
+    CPUScraper
+)
+
+from crawlers.benchmark.gpu_scraper import (
+    GPUScraper
+)
+
+
+def to_float(value):
+
+    if value in [None, "", "NA"]:
+        return None
+
+    try:
+
+        return float(
+            str(value)
+            .replace(",", "")
+            .replace("$", "")
+        )
+
+    except:
+
+        return None
+
+
+def to_int(value):
+
+    if value in [None, "", "NA"]:
+        return None
+
+    try:
+
+        return int(
+            float(
+                str(value)
+                .replace(",", "")
+            )
+        )
+
+    except:
+
+        return None
+
+def crawl_category(category):
+    """
+    Crawl toàn bộ sản phẩm của 1 category
+    Chạy trong thread riêng
+    """
+
+    crawler = GearVNCrawler()
+
+    products = crawler.get_products(
+        category
+    )
+
+    return category, products
+
+
+def seed_all_products():
+
+    start_time = time.time()
+
+    print("=" * 70)
+    print("KHỞI ĐỘNG IMPORT DỮ LIỆU GEARVN")
+    print("=" * 70)
+
+    # ==================================================
+    # Tự tạo bảng nếu chưa tồn tại
+    # ==================================================
+
+    print("\nKiểm tra database...")
+
+    Base.metadata.create_all(engine)
+
+    print("Database sẵn sàng")
+
+    session = SessionLocal()
+
+    try:
+
+        parser = GearVNParser()
+
+        # ==================================================
+        # Lấy toàn bộ product_id hiện có
+        # Tránh query SQL hàng nghìn lần
+        # ==================================================
+
+        print("\nĐọc danh sách sản phẩm hiện có...")
+
+        existing_ids = {
+            x[0]
+            for x in session.query(
+                Product.product_id
+            ).all()
+        }
+
+        print(
+            f"Đã tìm thấy {len(existing_ids)} sản phẩm trong database"
+        )
+
+        # ==================================================
+        # Crawl đa luồng
+        # ==================================================
+
+        print("\nBắt đầu crawl dữ liệu...\n")
+
+        all_products = {}
+
+        with ThreadPoolExecutor(
+            max_workers=8
+        ) as executor:
+
+            futures = []
+
+            for category in GEARVN_APIS:
+
+                futures.append(
+
+                    executor.submit(
+                        crawl_category,
+                        category
+                    )
+
+                )
+
+            for future in as_completed(
+                futures
+            ):
+
+                category, products = (
+                    future.result()
+                )
+
+                all_products[
+                    category
+                ] = products
+
+                print(
+                    f"✓ Hoàn thành {category}"
+                    f" ({len(products)} sản phẩm)"
+                )
+
+        # ==================================================
+        # Import SQL
+        # ==================================================
+
+        total_crawled = 0
+        total_inserted = 0
+        total_skipped = 0
+
+        print("\n")
+        print("=" * 70)
+        print("BẮT ĐẦU IMPORT DATABASE")
+        print("=" * 70)
+
+        for category, products in all_products.items():
+
+            print()
+            print("-" * 60)
+
+            print(
+                f"Category: {category}"
+            )
+
+            total_crawled += len(products)
+
+            inserted_in_category = 0
+            skipped_in_category = 0
+
+            for raw_product in products:
+
+                data = parser.parse_product(
+                    raw_product
+                )
+
+                product_id = data[
+                    "product_id"
+                ]
+
+                # ==================================================
+                # Đã tồn tại
+                # ==================================================
+
+                if product_id in existing_ids:
+
+                    skipped_in_category += 1
+                    total_skipped += 1
+
+                    continue
+
+                # ==================================================
+                # Thêm mới
+                # ==================================================
+
+                product = Product(
+                    **data
+                )
+
+                session.add(product)
+                images = parser.parse_images(
+                    raw_product
+                )
+
+                for image_data in images:
+
+                    image = ProductImage(
+                        **image_data
+                    )
+
+                    session.add(image)
+
+                specs = parser.parse_specs(
+                    raw_product
+                )
+
+                for spec_data in specs:
+
+                    spec = ProductSpec(
+                        **spec_data
+                    )
+
+                    session.add(spec)
+
+                existing_ids.add(
+                    product_id
+                )
+
+                inserted_in_category += 1
+                total_inserted += 1
+
+            session.commit()
+
+            print(
+                f"Tổng crawl: {len(products)}"
+            )
+
+            print(
+                f"Thêm mới : {inserted_in_category}"
+            )
+
+            print(
+                f"Bỏ qua   : {skipped_in_category}"
+            )
+
+        # ==================================================
+        # Tổng kết
+        # ==================================================
+
+        total_in_db = (
+            session.query(
+                func.count(Product.id)
+            )
+            .scalar()
+        )
+
+        elapsed = round(
+            time.time() - start_time,
+            2
+        )
+
+        print()
+        print("=" * 70)
+        print("KẾT QUẢ CUỐI CÙNG")
+        print("=" * 70)
+
+        print(
+            f"Tổng sản phẩm crawl : {total_crawled}"
+        )
+
+        print(
+            f"Tổng thêm mới       : {total_inserted}"
+        )
+
+        print(
+            f"Tổng bỏ qua         : {total_skipped}"
+        )
+
+        print(
+            f"Tổng record DB      : {total_in_db}"
+        )
+
+        print(
+            f"Thời gian chạy      : {elapsed} giây"
+        )
+
+    except Exception as e:
+
+        session.rollback()
+
+        print()
+        print("=" * 70)
+        print("LỖI")
+        print("=" * 70)
+
+        print(e)
+
+    finally:
+
+        session.close()
+
+def seed_cpu_benchmarks():
+
+    print()
+    print("=" * 70)
+    print("IMPORT CPU BENCHMARK")
+    print("=" * 70)
+
+    session = SessionLocal()
+
+    try:
+
+        scraper = CPUScraper()
+
+        cpus = scraper.get_all_cpus()
+
+        print(
+            f"CPU crawl được: {len(cpus)}"
+        )
+
+        existing_ids = {
+
+            str(x[0])
+
+            for x in session.query(
+                CpuBenchmark.cpu_id
+            ).all()
+
+        }
+
+        # chống trùng trong dataset
+        seen_ids = set()
+
+        inserted = 0
+        skipped_db = 0
+        skipped_duplicate = 0
+
+        for cpu in cpus:
+
+            cpu_id = str(
+                cpu.get("id")
+            )
+
+            # đã có trong DB
+            if cpu_id in existing_ids:
+
+                skipped_db += 1
+
+                continue
+
+            # trùng trong dataset PassMark
+            if cpu_id in seen_ids:
+
+                skipped_duplicate += 1
+
+                continue
+
+            seen_ids.add(
+                cpu_id
+            )
+
+            model = CpuBenchmark(
+
+                cpu_id=cpu_id,
+
+                name=cpu.get("name"),
+
+                cpumark=to_float(
+                    cpu.get("cpumark")
+                ),
+
+                thread_mark=to_float(
+                    cpu.get("thread")
+                ),
+
+                cores=to_int(
+                    cpu.get("cores")
+                ),
+
+                threads=to_int(
+                    cpu.get("logicals")
+                ),
+
+                tdp=to_float(
+                    cpu.get("tdp")
+                ),
+
+                speed=to_float(
+                    cpu.get("speed")
+                ),
+
+                turbo=to_float(
+                    cpu.get("turbo")
+                ),
+
+                price=to_float(
+                    cpu.get("price")
+                ),
+
+                samples=to_int(
+                    cpu.get("samples")
+                ),
+
+                socket=cpu.get(
+                    "socket"
+                ),
+
+                category=cpu.get(
+                    "cat"
+                ),
+
+                rank=to_int(
+                    cpu.get("rank")
+                )
+
+            )
+
+            session.add(model)
+
+            inserted += 1
+
+        session.commit()
+
+        total = (
+
+            session.query(
+                func.count(
+                    CpuBenchmark.id
+                )
+            )
+
+            .scalar()
+
+        )
+
+        print()
+        print(
+            f"CPU thêm mới     : {inserted}"
+        )
+
+        print(
+            f"CPU đã tồn tại   : {skipped_db}"
+        )
+
+        print(
+            f"CPU bị trùng API : {skipped_duplicate}"
+        )
+
+        print(
+            f"Tổng CPU DB      : {total}"
+        )
+
+    except Exception as e:
+
+        session.rollback()
+
+        print()
+        print("LỖI CPU BENCHMARK")
+
+        print(e)
+
+    finally:
+
+        session.close()
+
+def seed_gpu_benchmarks():
+
+    print()
+    print("=" * 70)
+    print("IMPORT GPU BENCHMARK")
+    print("=" * 70)
+
+    session = SessionLocal()
+
+    try:
+
+        scraper = GPUScraper()
+
+        gpus = scraper.get_all_gpus()
+
+        existing_ids = {
+
+            x[0]
+
+            for x in session.query(
+                GpuBenchmark.gpu_id
+            ).all()
+
+        }
+
+        inserted = 0
+
+        for gpu in gpus:
+
+            gpu_id = str(
+                gpu.get("id")
+            )
+
+            if gpu_id in existing_ids:
+                continue
+
+            model = GpuBenchmark(
+
+                gpu_id=gpu_id,
+
+                name=gpu.get(
+                    "name"
+                ),
+
+                g3d_mark=to_float(
+                    gpu.get("g3d")
+                ),
+
+                g2d_mark=to_float(
+                    gpu.get("g2d")
+                ),
+
+                memory_size=str(
+                    gpu.get(
+                        "memSize"
+                    )
+                ),
+
+                core_clock=str(
+                    gpu.get(
+                        "coreClk"
+                    )
+                ),
+
+                memory_clock=str(
+                    gpu.get(
+                        "memClk"
+                    )
+                ),
+
+                tdp=to_float(
+                    gpu.get("tdp")
+                ),
+
+                price=to_float(
+                    gpu.get("price")
+                ),
+
+                samples=to_int(
+                    gpu.get("samples")
+                ),
+
+                bus=gpu.get("bus"),
+
+                category=gpu.get(
+                    "cat"
+                ),
+
+                rank=to_int(
+                    gpu.get("rank")
+                )
+            )
+
+            session.add(model)
+
+            inserted += 1
+
+        session.commit()
+
+        total = session.query(
+            func.count(
+                GpuBenchmark.id
+            )
+        ).scalar()
+
+        print(
+            f"GPU mới: {inserted}"
+        )
+
+        print(
+            f"Tổng GPU DB: {total}"
+        )
+
+    except Exception as e:
+
+        session.rollback()
+
+        print(e)
+
+    finally:
+
+        session.close()
+
+
+        
+if __name__ == "__main__":
+
+    Base.metadata.create_all(
+        bind=engine
+    )
+
+    seed_all_products()
+
+    seed_cpu_benchmarks()
+
+    seed_gpu_benchmarks()
+
+
+====================================================================================================
+FILE: database\__init__.py
+====================================================================================================
+[LANGUAGE: python]
+
+
+
+
+====================================================================================================
+FILE: routes\api.py
+====================================================================================================
+[LANGUAGE: python]
+
+
+
+
+====================================================================================================
+FILE: routes\benchmarks.py
+====================================================================================================
+[LANGUAGE: python]
+
+from flask import Blueprint
+from flask import render_template
+from flask import request
+
+from services.benchmark_service import (
+    BenchmarkService
+)
+
+benchmark_bp = Blueprint(
+    "benchmark",
+    __name__
+)
+
+service = BenchmarkService()
+
+
+@benchmark_bp.route(
+    "/benchmarks/cpu"
+)
+def cpu_benchmark():
+
+    page = int(
+        request.args.get(
+            "page",
+            1
+        )
+    )
+
+    keyword = request.args.get(
+        "q"
+    )
+
+    page_size = 50
+
+    cpus = service.get_cpu_benchmarks(
+
+        page=page,
+
+        page_size=page_size,
+
+        keyword=keyword
+
+    )
+
+    total = service.get_cpu_count(
+        keyword
+    )
+
+    total_pages = (
+
+        total
+        + page_size
+        - 1
+
+    ) // page_size
+
+    start_page = max(
+        page - 2,
+        1
+    )
+
+    end_page = min(
+        page + 2,
+        total_pages
+    )
+
+    return render_template(
+
+        "benchmarks/cpu_list.html",
+
+        cpus=cpus,
+
+        page=page,
+
+        total_pages=total_pages,
+
+        start_page=start_page,
+
+        end_page=end_page,
+
+        keyword=keyword
+    )
+
+
+@benchmark_bp.route(
+    "/benchmarks/gpu"
+)
+def gpu_benchmark():
+
+    page = int(
+        request.args.get(
+            "page",
+            1
+        )
+    )
+
+    keyword = request.args.get(
+        "q"
+    )
+
+    page_size = 50
+    start_rank = (
+        (page - 1)
+        * page_size
+    )
+
+    gpus = service.get_gpu_benchmarks(
+
+        page=page,
+
+        page_size=page_size,
+
+        keyword=keyword
+
+    )
+
+    total = service.get_gpu_count(
+        keyword
+    )
+
+    total_pages = (
+
+        total
+        + page_size
+        - 1
+
+    ) // page_size
+
+    start_page = max(
+        page - 2,
+        1
+    )
+
+    end_page = min(
+        page + 2,
+        total_pages
+    )
+
+    return render_template(
+
+        "benchmarks/gpu_list.html",
+
+        gpus=gpus,
+
+        page=page,
+
+        total_pages=total_pages,
+
+        start_page=start_page,
+
+        end_page=end_page,
+
+        start_rank=start_rank,
+
+        keyword=keyword
+    )
+
+@benchmark_bp.route(
+    "/compare/cpu"
+)
+def compare_cpu():
+
+    cpu1_id = request.args.get(
+        "cpu1"
+    )
+
+    cpu2_id = request.args.get(
+        "cpu2"
+    )
+
+    cpu1 = None
+    cpu2 = None
+
+    if cpu1_id:
+
+        cpu1 = service.get_cpu_by_id(
+            cpu1_id
+        )
+
+    if cpu2_id:
+
+        cpu2 = service.get_cpu_by_id(
+            cpu2_id
+        )
+
+    cpu_list = (
+        service.get_top_cpus(
+            200
+        )
+    )
+
+    return render_template(
+
+        "benchmarks/cpu_compare.html",
+
+        cpu1=cpu1,
+
+        cpu2=cpu2,
+
+        cpu_list=cpu_list,
+
+        chart_labels=[
+
+            cpu1.name if cpu1 else "",
+
+            cpu2.name if cpu2 else ""
+
+        ],
+
+        cpu_mark_values=[
+
+            cpu1.cpumark if cpu1 else 0,
+
+            cpu2.cpumark if cpu2 else 0
+
+        ],
+
+        thread_values=[
+
+            cpu1.thread_mark if cpu1 else 0,
+
+            cpu2.thread_mark if cpu2 else 0
+
+        ],
+
+        core_values=[
+
+            cpu1.cores if cpu1 else 0,
+
+            cpu2.cores if cpu2 else 0
+
+        ],
+
+        thread_count_values=[
+
+            cpu1.threads if cpu1 else 0,
+
+            cpu2.threads if cpu2 else 0
+
+        ]
+
+    )
+
+@benchmark_bp.route(
+    "/compare/gpu"
+)
+def compare_gpu():
+
+    gpu1_id = request.args.get(
+        "gpu1"
+    )
+
+    gpu2_id = request.args.get(
+        "gpu2"
+    )
+
+    gpu1 = None
+    gpu2 = None
+
+    if gpu1_id:
+
+        gpu1 = service.get_gpu_by_id(
+            gpu1_id
+        )
+
+    if gpu2_id:
+
+        gpu2 = service.get_gpu_by_id(
+            gpu2_id
+        )
+
+    gpu_list = (
+        service.get_top_gpus(
+            200
+        )
+    )
+
+    return render_template(
+
+        "benchmarks/gpu_compare.html",
+
+        gpu1=gpu1,
+
+        gpu2=gpu2,
+
+        gpu_list=gpu_list,
+
+        chart_labels=[
+
+            gpu1.name if gpu1 else "",
+
+            gpu2.name if gpu2 else ""
+
+        ],
+
+        g3d_values=[
+
+            gpu1.g3d_mark if gpu1 else 0,
+
+            gpu2.g3d_mark if gpu2 else 0
+
+        ],
+
+        g2d_values=[
+
+            gpu1.g2d_mark if gpu1 else 0,
+
+            gpu2.g2d_mark if gpu2 else 0
+
+        ],
+
+        tdp_values=[
+
+            gpu1.tdp if gpu1 else 0,
+
+            gpu2.tdp if gpu2 else 0
+
+        ]
+
+    )
+
+
+
+@benchmark_bp.route(
+    "/benchmarks/cpu/<cpu_id>"
+)
+def cpu_detail(
+    cpu_id
+):
+
+    cpu = (
+        service.get_cpu_by_id(
+            cpu_id
+        )
+    )
+
+    if not cpu:
+
+        return "Không tìm thấy CPU", 404
+
+    return render_template(
+
+        "benchmarks/cpu_detail.html",
+
+        cpu=cpu
+
+    )
+
+@benchmark_bp.route(
+    "/benchmarks/gpu/<gpu_id>"
+)
+def gpu_detail(
+    gpu_id
+):
+
+    gpu = (
+        service.get_gpu_by_id(
+            gpu_id
+        )
+    )
+
+    if not gpu:
+
+        return "Không tìm thấy GPU", 404
+
+    return render_template(
+
+        "benchmarks/gpu_detail.html",
+
+        gpu=gpu
+
+    )
+
+
+====================================================================================================
+FILE: routes\dashboard.py
+====================================================================================================
+[LANGUAGE: python]
+
+from flask import Blueprint
+from flask import render_template
+from services.dashboard_service import DashboardService
+
+dashboard_bp = Blueprint(
+    "dashboard",
+    __name__
+)
+
+service = DashboardService()
+
+@dashboard_bp.route(
+    "/dashboard"
+)
+def dashboard():
+
+    stats = (
+        service.get_statistics()
+    )
+
+    cpu_chart = (
+        service.get_top_cpu_chart()
+    )
+
+    gpu_chart = (
+        service.get_top_gpu_chart()
+    )
+
+    vendor_chart = (
+        service.get_vendor_chart()
+    )
+
+    type_chart = (
+        service.get_product_type_chart()
+    )
+
+    price_chart = (
+        service.get_avg_price_chart()
+    )
+
+    print(cpu_chart)
+
+    return render_template(
+
+        "dashboard.html",
+
+        stats=stats,
+
+        labels=cpu_chart["labels"],
+
+        values=cpu_chart["values"],
+
+        gpu_labels=gpu_chart["labels"],
+
+        gpu_values=gpu_chart["values"],
+
+        type_labels=type_chart["labels"],
+
+        type_values=type_chart["values"],
+
+        price_labels=price_chart["labels"],
+
+        price_values=price_chart["values"],
+
+    )
+
+
+====================================================================================================
+FILE: routes\home.py
+====================================================================================================
+[LANGUAGE: python]
+
+from flask import Blueprint
+from flask import render_template
+
+from services.home_service import (
+    HomeService
+)
+
+home_bp = Blueprint(
+    "home",
+    __name__
+)
+
+service = HomeService()
+
+
+@home_bp.route("/")
+def home():
+
+    latest_products = (
+        service.get_latest_products()
+    )
+
+    total_products = (
+        service.get_total_products()
+    )
+
+    total_vendors = (
+        service.get_total_vendors()
+    )
+
+    return render_template(
+
+        "home.html",
+
+        latest_products=latest_products,
+
+        total_products=total_products,
+
+        total_vendors=total_vendors
+    )
+
+
+====================================================================================================
+FILE: routes\products.py
+====================================================================================================
+[LANGUAGE: python]
+
+from flask import Blueprint
+from flask import jsonify
+from flask import render_template
+from flask import request
+from flask import redirect
+from flask import url_for
+
+from services.product_service import (
+    ProductService
+)
+
+product_bp = Blueprint(
+    "products",
+    __name__
+)
+
+service = ProductService()
+
+
+@product_bp.route(
+    "/products"
+)
+def get_products():
+
+    products = (
+        service.get_all_products()
+    )
+
+    result = []
+
+    for product in products:
+
+        result.append({
+
+            "product_id":
+                product.product_id,
+
+            "title":
+                product.title,
+
+            "price":
+                product.price,
+
+            "vendor":
+                product.vendor,
+
+            "image":
+                product.image_url
+        })
+
+    return jsonify(result)
+
+
+@product_bp.route(
+    "/products/<product_id>"
+)
+def get_product_detail(
+    product_id
+):
+
+    product = (
+        service.get_product_by_id(
+            product_id
+        )
+    )
+
+    if not product:
+
+        return jsonify({
+
+            "message":
+                "Không tìm thấy sản phẩm"
+
+        }), 404
+
+    images = (
+        service.get_product_images(
+            product_id
+        )
+    )
+
+    specs = (
+        service.get_product_specs(
+            product_id
+        )
+    )
+
+    return jsonify({
+
+        "product_id":
+            product.product_id,
+
+        "title":
+            product.title,
+
+        "vendor":
+            product.vendor,
+
+        "price":
+            product.price,
+
+        "description":
+            product.description,
+
+        "images": [
+
+            image.image_url
+
+            for image in images
+
+        ],
+
+        "specs": [
+
+            {
+
+                "name":
+                    spec.spec_name,
+
+                "value":
+                    spec.spec_value
+
+            }
+
+            for spec in specs
+
+        ]
+    })
+
+@product_bp.route(
+    "/products/view"
+)
+def product_list():
+
+    vendor = request.args.get(
+        "vendor"
+    )
+
+    product_type = request.args.get(
+        "type"
+    )
+
+    price_range = request.args.get(
+        "price"
+    )
+
+    sort = request.args.get(
+        "sort"
+    )
+    query_params = {}
+
+    if vendor:
+        query_params["vendor"] = vendor
+
+    if product_type:
+        query_params["type"] = product_type
+
+    if price_range:
+        query_params["price"] = price_range
+
+    if sort:
+        query_params["sort"] = sort
+    page = int(
+        request.args.get(
+            "page",
+            1
+        )
+    )
+    # Chặn page âm hoặc bằng 0
+    if page < 1:
+        page = 1
+    page_size = 20
+
+    products = (
+
+        service.get_filtered_products(
+
+            page=page,
+
+            page_size=page_size,
+
+            vendor=vendor,
+
+            product_type=product_type,
+
+            price_range=price_range,
+
+            sort=sort,
+
+        )
+
+    )
+
+    total_products = (
+
+        service.get_filtered_count(
+
+            vendor=vendor,
+
+            product_type=product_type,
+
+            price_range=price_range
+
+        )
+
+    )
+    total_pages = (
+
+        total_products
+        + page_size
+        - 1
+
+    ) // page_size
+
+    # Nếu không có sản phẩm nào
+    if total_pages == 0:
+        total_pages = 1
+
+    # Chống user nhập page quá lớn
+    if page > total_pages:
+        page = total_pages
+
+    # Chống page âm hoặc bằng 0
+    if page < 1:
+        page = 1
+    start_page = max(
+        page - 2,
+        1
+    )
+
+    end_page = min(
+        page + 2,
+        total_pages
+    )
+    vendors = (
+        service.get_all_vendors()
+    )
+
+    types = (
+        service.get_all_types()
+    )
+
+    category_counts = (
+        service.get_category_counts()
+    )
+
+    return render_template(
+
+        "products/list.html",
+
+        products=products,
+
+        page=page,
+
+        total_pages=total_pages,
+
+        start_page=start_page,
+
+        end_page=end_page,
+
+        vendors=vendors,
+
+        types=types,
+
+        selected_vendor=vendor,
+
+        selected_type=product_type,
+
+        query_params=query_params,
+
+        selected_price=price_range,
+
+        selected_sort=sort,
+
+        total_products=total_products,
+
+        category_counts=category_counts,
+    )
+
+
+@product_bp.route(
+    "/products/view/<product_id>"
+)
+def product_detail(
+    product_id
+):
+
+    product = (
+        service.get_product_by_id(
+            product_id
+        )
+    )
+
+    images = (
+        service.get_product_images(
+            product_id
+        )
+    )
+
+    specs = (
+        service.get_product_specs(
+            product_id
+        )
+    )
+
+    return render_template(
+
+        "products/detail.html",
+
+        product=product,
+
+        images=images,
+
+        specs=specs
+    )
+
+
+====================================================================================================
+FILE: routes\search.py
+====================================================================================================
+[LANGUAGE: python]
+
+from flask import Blueprint
+from flask import render_template
+from flask import request
+
+from services.search_service import (
+    SearchService
+)
+
+search_bp = Blueprint(
+    "search",
+    __name__
+)
+
+service = SearchService()
+
+
+@search_bp.route(
+    "/search"
+)
+def search():
+
+    keyword = request.args.get(
+        "q",
+        ""
+    )
+
+    products = []
+
+    if keyword:
+
+        products = (
+            service.search_products(
+                keyword
+            )
+        )
+
+    return render_template(
+
+        "products/search.html",
+
+        products=products,
+
+        keyword=keyword
+    )
+
+
+====================================================================================================
+FILE: routes\__init__.py
+====================================================================================================
+[LANGUAGE: python]
+
+
+
+
+====================================================================================================
+FILE: services\benchmark_service.py
+====================================================================================================
+[LANGUAGE: python]
+
+from database.db import SessionLocal
+
+from database.models import (
+    CpuBenchmark,
+    GpuBenchmark
+)
+
+
+class BenchmarkService:
+
+    def get_cpu_benchmarks(
+        self,
+        page=1,
+        page_size=50,
+        keyword=None
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            query = session.query(
+                CpuBenchmark
+            )
+
+            if keyword:
+
+                query = query.filter(
+
+                    CpuBenchmark.name.contains(
+                        keyword
+                    )
+
+                )
+
+            query = query.order_by(
+                CpuBenchmark.rank.asc()
+            )
+
+            return (
+
+                query
+
+                .offset(
+                    (page - 1)
+                    * page_size
+                )
+
+                .limit(
+                    page_size
+                )
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
+
+    def get_cpu_count(
+        self,
+        keyword=None
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            query = session.query(
+                CpuBenchmark
+            )
+
+            if keyword:
+
+                query = query.filter(
+
+                    CpuBenchmark.name.contains(
+                        keyword
+                    )
+
+                )
+
+            return query.count()
+
+        finally:
+
+            session.close()
+
+    def get_gpu_benchmarks(
+        self,
+        page=1,
+        page_size=50,
+        keyword=None
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            query = session.query(
+                GpuBenchmark
+            )
+
+            if keyword:
+
+                query = query.filter(
+
+                    GpuBenchmark.name.contains(
+                        keyword
+                    )
+
+                )
+
+            query = query.order_by(
+                GpuBenchmark.g3d_mark.desc()
+            )
+
+            return (
+
+                query
+
+                .offset(
+                    (page - 1)
+                    * page_size
+                )
+
+                .limit(
+                    page_size
+                )
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
+
+    def get_gpu_count(
+        self,
+        keyword=None
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            query = session.query(
+                GpuBenchmark
+            )
+
+            if keyword:
+
+                query = query.filter(
+
+                    GpuBenchmark.name.contains(
+                        keyword
+                    )
+
+                )
+
+            return query.count()
+
+        finally:
+
+            session.close()
+
+
+    def get_cpu_by_id(
+        self,
+        cpu_id
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session
+
+                .query(
+                    CpuBenchmark
+                )
+
+                .filter(
+                    CpuBenchmark.cpu_id == cpu_id
+                )
+
+                .first()
+
+            )
+
+        finally:
+
+            session.close()
+
+
+    def get_top_cpus(
+        self,
+        limit=100
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session.query(
+                    CpuBenchmark
+                )
+
+                .order_by(
+                    CpuBenchmark.cpumark.desc()
+                )
+
+                .limit(limit)
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
+
+    def get_gpu_by_id(
+        self,
+        gpu_id
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session
+
+                .query(
+                    GpuBenchmark
+                )
+
+                .filter(
+                    GpuBenchmark.gpu_id == gpu_id
+                )
+
+                .first()
+
+            )
+
+        finally:
+
+            session.close()
+
+
+    def get_top_gpus(
+        self,
+        limit=200
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session.query(
+                    GpuBenchmark
+                )
+
+                .order_by(
+                    GpuBenchmark.g3d_mark.desc()
+                )
+
+                .limit(limit)
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
+
+
+====================================================================================================
+FILE: services\dashboard_service.py
+====================================================================================================
+[LANGUAGE: python]
+
+from database.db import SessionLocal
+
+from database.models import (
+    Product,
+    CpuBenchmark,
+    GpuBenchmark
+)
+
+from sqlalchemy import func
+
+
+class DashboardService:
+
+    def get_statistics(self):
+
+        session = SessionLocal()
+
+        try:
+
+            total_products = (
+
+                session.query(
+                    func.count(
+                        Product.id
+                    )
+                )
+
+                .scalar()
+
+            )
+
+            total_cpu = (
+
+                session.query(
+                    func.count(
+                        CpuBenchmark.id
+                    )
+                )
+
+                .scalar()
+
+            )
+
+            total_gpu = (
+
+                session.query(
+                    func.count(
+                        GpuBenchmark.id
+                    )
+                )
+
+                .scalar()
+
+            )
+
+            total_vendor = (
+
+                session.query(
+                    func.count(
+                        func.distinct(
+                            Product.vendor
+                        )
+                    )
+                )
+
+                .scalar()
+
+            )
+
+            return {
+
+                "products":
+                total_products,
+
+                "cpus":
+                total_cpu,
+
+                "gpus":
+                total_gpu,
+
+                "vendors":
+                total_vendor
+
+            }
+
+        finally:
+
+            session.close()
+
+    def get_top_cpu_chart(self):
+
+        session = SessionLocal()
+
+        try:
+
+            cpus = (
+
+                session.query(
+                    CpuBenchmark
+                )
+
+                .order_by(
+                    CpuBenchmark.cpumark.desc()
+                )
+
+                .limit(10)
+
+                .all()
+
+            )
+
+            return {
+
+                "labels": [
+
+                    cpu.name
+
+                    for cpu in cpus
+
+                ],
+
+                "values": [
+
+                    cpu.cpumark or 0
+
+                    for cpu in cpus
+
+                ]
+
+            }
+
+        finally:
+
+            session.close()
+
+    def get_top_gpu_chart(self):
+
+        session = SessionLocal()
+
+        try:
+
+            gpus = (
+
+                session.query(
+                    GpuBenchmark
+                )
+
+                .order_by(
+                    GpuBenchmark.g3d_mark.desc()
+                )
+
+                .limit(10)
+
+                .all()
+
+            )
+
+            return {
+
+                "labels": [
+
+                    gpu.name
+
+                    for gpu in gpus
+
+                ],
+
+                "values": [
+
+                    gpu.g3d_mark or 0
+
+                    for gpu in gpus
+
+                ]
+
+            }
+
+        finally:
+
+            session.close()
+
+
+    def get_vendor_chart(self):
+
+        session = SessionLocal()
+
+        try:
+
+            result = (
+
+                session.query(
+
+                    Product.vendor,
+
+                    func.count(
+                        Product.id
+                    )
+
+                )
+
+                .group_by(
+                    Product.vendor
+                )
+
+                .order_by(
+                    func.count(
+                        Product.id
+                    ).desc()
+                )
+
+                .limit(10)
+
+                .all()
+
+            )
+
+            return {
+
+                "labels": [
+
+                    row[0]
+
+                    for row in result
+
+                ],
+
+                "values": [
+
+                    row[1]
+
+                    for row in result
+
+                ]
+
+            }
+
+        finally:
+
+            session.close()
+
+
+    def get_product_type_chart(self):
+
+        session = SessionLocal()
+
+        try:
+
+            result = (
+
+                session.query(
+
+                    Product.product_type,
+
+                    func.count(
+                        Product.id
+                    )
+
+                )
+
+                .group_by(
+                    Product.product_type
+                )
+
+                .order_by(
+                    func.count(
+                        Product.id
+                    ).desc()
+                )
+
+                .limit(10)
+
+                .all()
+
+            )
+
+            return {
+
+                "labels": [
+
+                    row[0] or "Unknown"
+
+                    for row in result
+
+                ],
+
+                "values": [
+
+                    row[1]
+
+                    for row in result
+
+                ]
+
+            }
+
+        finally:
+
+            session.close()
+
+    def get_avg_price_chart(self):
+
+        session = SessionLocal()
+
+        try:
+
+            result = (
+
+                session.query(
+
+                    Product.vendor,
+
+                    func.avg(
+                        Product.price
+                    )
+
+                )
+
+                .group_by(
+                    Product.vendor
+                )
+
+                .order_by(
+                    func.avg(
+                        Product.price
+                    ).desc()
+                )
+
+                .limit(10)
+
+                .all()
+
+            )
+
+            return {
+
+                "labels": [
+
+                    row[0]
+
+                    for row in result
+
+                ],
+
+                "values": [
+
+                    float(row[1] or 0)
+
+                    for row in result
+
+                ]
+
+            }
+
+        finally:
+
+            session.close()
+
+
+====================================================================================================
+FILE: services\home_service.py
+====================================================================================================
+[LANGUAGE: python]
+
+from database.db import SessionLocal
+
+from database.models import Product
+
+
+class HomeService:
+
+    def get_latest_products(
+        self,
+        limit=8
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session
+
+                .query(Product)
+
+                .order_by(
+                    Product.id.desc()
+                )
+
+                .limit(limit)
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
+
+    def get_total_products(
+        self
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+                session
+                .query(Product)
+                .count()
+            )
+
+        finally:
+
+            session.close()
+
+    def get_total_vendors(
+        self
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+
+                session
+
+                .query(
+                    Product.vendor
+                )
+
+                .distinct()
+
+                .count()
+
+            )
+
+        finally:
+
+            session.close()
+
+
+====================================================================================================
+FILE: services\product_service.py
+====================================================================================================
+[LANGUAGE: python]
+
+from database.db import SessionLocal
+
+from database.models import Product
+from database.models import ProductImage
+from database.models import ProductSpec
+from sqlalchemy import and_
+
+class ProductService:
+
+    def get_all_products(self):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+                session
+                .query(Product)
+                .all()
+            )
+
+        finally:
+
+            session.close()
+
+
+    def get_product_by_id(
+        self,
+        product_id
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+                session
+                .query(Product)
+                .filter(
+                    Product.product_id
+                    == str(product_id)
+                )
+                .first()
+            )
+
+        finally:
+
+            session.close()
+
+
+    def get_product_images(
+        self,
+        product_id
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+                session
+                .query(ProductImage)
+                .filter(
+                    ProductImage.product_id
+                    == str(product_id)
+                )
+                .all()
+            )
+
+        finally:
+
+            session.close()
+
+
+    def get_product_specs(
+        self,
+        product_id
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+                session
+                .query(ProductSpec)
+                .filter(
+                    ProductSpec.product_id
+                    == str(product_id)
+                )
+                .all()
+            )
+
+        finally:
+
+            session.close()
+
+    #Phân trang
+    def get_products_page(
+        self,
+        page=1,
+        page_size=20
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            offset = (
+                page - 1
+            ) * page_size
+
+            return (
+                session
+                .query(Product)
+                .order_by(Product.id.desc())
+                .offset(offset)
+                .limit(page_size)
+                .all()
+            )
+
+        finally:
+
+            session.close()
+    def get_total_products(
+        self
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            return (
+                session
+                .query(Product)
+                .count()
+            )
+
+        finally:
+
+            session.close()
+    
+    def get_filtered_products(
+        self,
+        page=1,
+        page_size=20,
+        vendor=None,
+        product_type=None,
+        price_range=None,
+        sort=None
+    ):
+
+        if page < 1:
+            page = 1
+
+        session = SessionLocal()
+
+        try:
+
+            query = (
+                session
+                .query(Product)
+            )
+
+            # hãng
+
+            if vendor:
+
+                query = query.filter(
+                    Product.vendor == vendor
+                )
+
+            # loại
+
+            if product_type:
+
+                query = query.filter(
+                    Product.product_type
+                    == product_type
+                )
+
+            # giá
+
+            if price_range:
+
+                if price_range == "0-5000000":
+
+                    query = query.filter(
+                        Product.price <= 5000000
+                    )
+
+                elif price_range == "5000000-10000000":
+
+                    query = query.filter(
+                        Product.price > 5000000,
+                        Product.price <= 10000000
+                    )
+
+                elif price_range == "10000000-20000000":
+
+                    query = query.filter(
+                        Product.price > 10000000,
+                        Product.price <= 20000000
+                    )
+
+                elif price_range == "20000000+":
+
+                    query = query.filter(
+                        Product.price > 20000000
+                    )
+
+            # sắp xếp
+
+            if sort == "price_asc":
+
+                query = query.order_by(
+                    Product.price.asc()
+                )
+
+            elif sort == "price_desc":
+
+                query = query.order_by(
+                    Product.price.desc()
+                )
+
+            else:
+
+                query = query.order_by(
+                    Product.id.desc()
+                )
+
+            offset = (
+                page - 1
+            ) * page_size
+
+            return (
+
+                query
+
+                .offset(offset)
+
+                .limit(page_size)
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
+
+    #Lấy danh sách hãng
+    def get_all_vendors(
+        self
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            rows = (
+
+                session
+
+                .query(
+                    Product.vendor
+                )
+
+                .distinct()
+
+                .all()
+
+            )
+
+            return [
+
+                x[0]
+
+                for x in rows
+
+                if x[0]
+
+            ]
+
+        finally:
+
+            session.close()
+
+    #Lấy danh sách loại sản phẩm
+    def get_all_types(
+        self
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            rows = (
+
+                session
+
+                .query(
+                    Product.product_type
+                )
+
+                .distinct()
+
+                .all()
+
+            )
+
+            mapping = {
+
+                "VGA":
+                "Card màn hình"
+            }
+
+            result = []
+            seen = set()
+
+            for row in rows:
+
+                product_type = (
+                    row[0] or ""
+                ).strip()
+
+                if not product_type:
+                    continue
+
+                product_type = mapping.get(
+                    product_type,
+                    product_type
+                )
+
+                key = (
+                    product_type.lower()
+                )
+
+                if key not in seen:
+
+                    seen.add(key)
+
+                    result.append(
+                        product_type
+                    )
+
+            return sorted(result)
+
+        finally:
+
+            session.close()
+
+    def get_filtered_count(
+        self,
+        vendor=None,
+        product_type=None,
+        price_range=None
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            query = (
+                session
+                .query(Product)
+            )
+
+            if vendor:
+
+                query = query.filter(
+                    Product.vendor == vendor
+                )
+
+            if product_type:
+
+                query = query.filter(
+                    Product.product_type
+                    == product_type
+                )
+
+            if price_range:
+
+                if price_range == "0-5000000":
+
+                    query = query.filter(
+                        Product.price <= 5000000
+                    )
+
+                elif price_range == "5000000-10000000":
+
+                    query = query.filter(
+                        Product.price > 5000000,
+                        Product.price <= 10000000
+                    )
+
+                elif price_range == "10000000-20000000":
+
+                    query = query.filter(
+                        Product.price > 10000000,
+                        Product.price <= 20000000
+                    )
+
+                elif price_range == "20000000+":
+
+                    query = query.filter(
+                        Product.price > 20000000
+                    )
+
+            return query.count()
+
+        finally:
+
+            session.close()
+
+    def get_category_counts(
+        self
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            rows = (
+
+                session
+
+                .query(
+                    Product.product_type
+                )
+
+                .all()
+
+            )
+
+            mapping = {
+
+                "VGA":
+                "Card màn hình"
+
+            }
+
+            result = {}
+
+            for row in rows:
+
+                category = (
+                    row[0] or ""
+                ).strip()
+
+                if not category:
+                    continue
+
+                category = mapping.get(
+                    category,
+                    category
+                )
+
+                result[category] = (
+
+                    result.get(
+                        category,
+                        0
+                    )
+
+                    + 1
+
+                )
+
+            return dict(
+
+                sorted(
+
+                    result.items(),
+
+                    key=lambda x: x[1],
+
+                    reverse=True
+
+                )
+
+            )
+
+        finally:
+
+            session.close()
+
+
+====================================================================================================
+FILE: services\recommendation_service.py
+====================================================================================================
+[LANGUAGE: python]
+
+
+
+
+====================================================================================================
+FILE: services\search_service.py
+====================================================================================================
+[LANGUAGE: python]
+
+from sqlalchemy import or_
+
+from database.db import SessionLocal
+from database.models import Product
+
+
+class SearchService:
+
+    def search_products(
+        self,
+        keyword,
+        limit=100
+    ):
+
+        session = SessionLocal()
+
+        try:
+
+            keyword = keyword.strip()
+
+            return (
+
+                session
+
+                .query(Product)
+
+                .filter(
+
+                    or_(
+
+                        Product.title.ilike(
+                            f"%{keyword}%"
+                        ),
+
+                        Product.vendor.ilike(
+                            f"%{keyword}%"
+                        ),
+
+                        Product.product_type.ilike(
+                            f"%{keyword}%"
+                        ),
+
+                        Product.tags.ilike(
+                            f"%{keyword}%"
+                        )
+
+                    )
+
+                )
+
+                .order_by(
+                    Product.id.desc()
+                )
+
+                .limit(limit)
+
+                .all()
+
+            )
+
+        finally:
+
+            session.close()
+
+
+====================================================================================================
+FILE: services\__init__.py
+====================================================================================================
+[LANGUAGE: python]
+
+
+
+
+====================================================================================================
+FILE: static\css\style.css
+====================================================================================================
+[LANGUAGE: css]
+
+.product-image {
+    height: 220px;
+    object-fit: contain;
+    padding: 10px;
+}
+
+.card {
+    transition: 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+}
+
+table td {
+    vertical-align: middle;
+}
+
+
+====================================================================================================
+FILE: templates\base.html
+====================================================================================================
+[LANGUAGE: html]
+
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>
+
+        {% block title %}
+        Computer Hardware Analytics
+        {% endblock %}
+
+    </title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+</head>
+
+<body>
+
+<nav
+class="
+navbar
+navbar-expand-lg
+navbar-dark
+bg-dark
+shadow-sm
+"
+>
+
+<div class="container">
+
+    <a
+    class="navbar-brand fw-bold"
+    href="/"
+    >
+
+        <i class="fa-solid fa-microchip"></i>
+
+        Computer Hardware Analytics
+
+    </a>
+
+    <button
+
+        class="navbar-toggler"
+
+        type="button"
+
+        data-bs-toggle="collapse"
+
+        data-bs-target="#navbarContent"
+
+    >
+
+        <span
+        class="navbar-toggler-icon"
+        ></span>
+
+    </button>
+
+    <div
+    class="collapse navbar-collapse"
+    id="navbarContent"
+    >
+
+        <!-- Menu -->
+
+        <ul class="navbar-nav me-auto">
+
+        <li class="nav-item">
+
+            <a
+            class="nav-link"
+            href="/"
+            >
+
+                Trang chủ
+
+            </a>
+
+        </li>
+
+        <li class="nav-item">
+
+            <a
+            class="nav-link"
+            href="/products/view"
+            >
+
+                Sản phẩm
+
+            </a>
+
+        </li>
+
+        <li class="nav-item dropdown">
+
+            <a
+
+            class="
+            nav-link
+            dropdown-toggle
+            "
+
+            href="#"
+
+            role="button"
+
+            data-bs-toggle="dropdown"
+
+            >
+
+                Benchmark
+
+            </a>
+
+            <ul class="dropdown-menu">
+
+                <li>
+
+                    <a
+                    class="dropdown-item"
+                    href="/benchmarks/cpu"
+                    >
+
+                        CPU Benchmark
+
+                    </a>
+
+                </li>
+
+                <li>
+
+                    <a
+                    class="dropdown-item"
+                    href="/benchmarks/gpu"
+                    >
+
+                        GPU Benchmark
+
+                    </a>
+
+                </li>
+
+                <li><hr class="dropdown-divider"></li>
+
+                <li>
+
+                    <a
+                    class="dropdown-item"
+                    href="/compare/cpu"
+                    >
+
+                        Compare CPU
+
+                    </a>
+
+                </li>
+
+                <li>
+
+                    <a
+                    class="dropdown-item"
+                    href="/compare/gpu"
+                    >
+
+                        Compare GPU
+
+                    </a>
+
+                </li>
+
+            </ul>
+
+        </li>
+
+        <li class="nav-item">
+
+            <a
+            class="nav-link"
+            href="/dashboard"
+            >
+
+                Dashboard
+
+            </a>
+
+        </li>
+
+    </ul>
+
+        <!-- Search -->
+
+        <form
+
+            class="d-flex"
+
+            action="/search"
+
+            method="get"
+
+        >
+
+            <input
+
+                class="form-control me-2"
+
+                type="search"
+
+                name="q"
+
+                placeholder="RTX 5070, Ryzen 7, SSD Samsung..."
+
+            >
+
+            <button
+
+                class="btn btn-outline-light"
+
+                type="submit"
+
+            >
+
+                <i class="fa-solid fa-magnifying-glass"></i>
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</nav>
+
+<div class="container mt-4">
+
+    {% block content %}
+    {% endblock %}
+
+</div>
+
+<footer
+class="
+bg-dark
+text-light
+text-center
+mt-5
+py-3
+"
+>
+
+    <div class="container">
+
+        Computer Hardware Analytics © 2026
+
+    </div>
+
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>
+
+
+====================================================================================================
+FILE: templates\dashboard.html
+====================================================================================================
+[LANGUAGE: html]
+
+{% extends "base.html" %}
+
+{% block title %}
+Bảng Điều Khiển
+{% endblock %}
+
+{% block content %}
+
+<h2 class="mb-4">
+
+    Bảng Điều Khiển Phân Tích Phần Cứng
+
+</h2>
+
+<div class="row">
+
+    <div class="col-md-3">
+
+        <div
+        class="
+        card
+        text-center
+        shadow-sm
+        mb-4
+        "
+        >
+
+            <div class="card-body">
+
+                <h5>
+
+                    Sản phẩm
+
+                </h5>
+
+                <h2>
+
+                    {{ "{:,}".format(stats.products) }}
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-3">
+
+        <div
+        class="
+        card
+        text-center
+        shadow-sm
+        mb-4
+        "
+        >
+
+            <div class="card-body">
+
+                <h5>
+
+                    CPU
+
+                </h5>
+
+                <h2>
+
+                    {{ "{:,}".format(stats.cpus) }}
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-3">
+
+        <div
+        class="
+        card
+        text-center
+        shadow-sm
+        mb-4
+        "
+        >
+
+            <div class="card-body">
+
+                <h5>
+
+                    GPU
+
+                </h5>
+
+                <h2>
+
+                    {{ "{:,}".format(stats.gpus) }}
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-3">
+
+        <div
+        class="
+        card
+        text-center
+        shadow-sm
+        mb-4
+        "
+        >
+
+            <div class="card-body">
+
+                <h5>
+
+                    Hãng sản xuất
+
+                </h5>
+
+                <h2>
+
+                    {{ "{:,}".format(stats.vendors) }}
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- HÀNG 1 -->
+
+<div class="row">
+
+    <div class="col-lg-6 mb-4">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <h4>
+
+                    Top 10 CPU mạnh nhất
+
+                </h4>
+
+                <canvas id="cpuChart"></canvas>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-lg-6 mb-4">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <h4>
+
+                    Top 10 GPU mạnh nhất
+
+                </h4>
+
+                <canvas id="gpuChart"></canvas>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+
+</div>
+
+<!-- HÀNG 2 -->
+
+<div class="row">
+
+    <div class="col-lg-6 mb-4">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <h4>
+
+                    Phân bố loại sản phẩm
+
+                </h4>
+
+                <canvas id="typeChart"></canvas>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-lg-6 mb-4">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <h4>
+
+                    Giá trung bình theo hãng
+
+                </h4>
+
+                <canvas id="priceChart"></canvas>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+//
+// CPU
+//
+
+new Chart(
+
+    document.getElementById(
+        "cpuChart"
+    ),
+
+    {
+
+        type: "bar",
+
+        data: {
+
+            labels:
+            {{ labels|tojson }},
+
+            datasets: [
+
+                {
+
+                    label:
+                    "Điểm hiệu năng CPU",
+
+                    data:
+                    {{ values|tojson }}
+
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            plugins: {
+
+                legend: {
+
+                    display: false
+
+                }
+
+            }
+
+        }
+
+    }
+
+);
+
+//
+// GPU
+//
+
+new Chart(
+
+    document.getElementById(
+        "gpuChart"
+    ),
+
+    {
+
+        type: "bar",
+
+        data: {
+
+            labels:
+            {{ gpu_labels|tojson }},
+
+            datasets: [
+
+                {
+
+                    label:
+                    "Điểm hiệu năng GPU",
+
+                    data:
+                    {{ gpu_values|tojson }}
+
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            plugins: {
+
+                legend: {
+
+                    display: false
+
+                }
+
+            }
+
+        }
+
+    }
+
+);
+
+//
+// PHÂN LOẠI SẢN PHẨM
+//
+
+new Chart(
+
+    document.getElementById(
+        "typeChart"
+    ),
+
+    {
+
+        type: "pie",
+
+        data: {
+
+            labels:
+            {{ type_labels|tojson }},
+
+            datasets: [
+
+                {
+
+                    data:
+                    {{ type_values|tojson }}
+
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true
+
+        }
+
+    }
+
+);
+
+//
+// GIÁ TRUNG BÌNH
+//
+
+new Chart(
+
+    document.getElementById(
+        "priceChart"
+    ),
+
+    {
+
+        type: "bar",
+
+        data: {
+
+            labels:
+            {{ price_labels|tojson }},
+
+            datasets: [
+
+                {
+
+                    label:
+                    "Giá trung bình (VNĐ)",
+
+                    data:
+                    {{ price_values|tojson }}
+
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true
+
+        }
+
+    }
+
+);
+
+</script>
+
+{% endblock %}
+
+
+====================================================================================================
+FILE: templates\home.html
+====================================================================================================
+[LANGUAGE: html]
+
+{% extends "base.html" %}
+
+{% block title %}
+Computer Hardware Analytics
+{% endblock %}
+
+{% block content %}
+
+<div
+class="
+p-5
+mb-4
+bg-light
+rounded-3
+"
+>
+
+    <div class="container-fluid">
+
+        <h1
+        class="display-5 fw-bold"
+        >
+
+            Computer Hardware Analytics
+
+        </h1>
+
+        <p
+        class="fs-5"
+        >
+
+            Hệ thống phân tích
+            linh kiện máy tính
+
+        </p>
+
+        <a
+
+        href="/products/view"
+
+        class="
+        btn
+        btn-primary
+        btn-lg
+        "
+
+        >
+
+            Xem sản phẩm
+
+        </a>
+
+    </div>
+
+</div>
+
+<div class="row mb-5">
+
+    <div class="col-md-6">
+
+        <div
+        class="
+        card
+        text-center
+        "
+        >
+
+            <div class="card-body">
+
+                <h3>
+
+                    {{ total_products }}
+
+                </h3>
+
+                <p>
+
+                    Sản phẩm
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-6">
+
+        <div
+        class="
+        card
+        text-center
+        "
+        >
+
+            <div class="card-body">
+
+                <h3>
+
+                    {{ total_vendors }}
+
+                </h3>
+
+                <p>
+
+                    Hãng sản xuất
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<h2
+class="mb-4"
+>
+
+    Sản phẩm mới nhất
+
+</h2>
+
+<div class="row">
+
+{% for product in latest_products %}
+
+<div
+class="
+col-lg-3
+col-md-4
+col-sm-6
+mb-4
+"
+>
+
+    <div
+    class="
+    card
+    h-100
+    "
+    >
+
+        <img
+
+            src="{{ product.image_url }}"
+
+            class="card-img-top"
+
+            style="
+            height:220px;
+            object-fit:contain;
+            "
+
+        >
+
+        <div class="card-body">
+
+            <h6>
+
+                {{ product.title }}
+
+            </h6>
+
+            <p
+            class="text-danger"
+            >
+
+                {{ "{:,.0f}".format(
+                    product.price
+                ) }}
+
+                VNĐ
+
+            </p>
+
+            <a
+
+            href="/products/view/{{ product.product_id }}"
+
+            class="
+            btn
+            btn-primary
+            w-100
+            "
+
+            >
+
+                Chi tiết
+
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% endblock %}
+
+
+====================================================================================================
+FILE: templates\benchmarks\cpu_compare.html
+====================================================================================================
+[LANGUAGE: html]
+
+{% extends "base.html" %}
+
+{% block title %}
+So sánh CPU
+{% endblock %}
+
+{% block content %}
+
+<h2 class="mb-4">
+
+    So sánh CPU
+
+</h2>
+
+<form
+method="get"
+class="row g-3 mb-4"
+>
+
+    <div class="col-md-5">
+
+        <select
+        name="cpu1"
+        class="form-select"
+        >
+
+            <option value="">
+
+                Chọn CPU thứ nhất
+
+            </option>
+
+            {% for cpu in cpu_list %}
+
+            <option
+
+            value="{{ cpu.id }}"
+
+            {% if cpu1 and cpu.id == cpu1.id %}
+            selected
+            {% endif %}
+
+            >
+
+                {{ cpu.name }}
+
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+    <div class="col-md-5">
+
+        <select
+        name="cpu2"
+        class="form-select"
+        >
+
+            <option value="">
+
+                Chọn CPU thứ hai
+
+            </option>
+
+            {% for cpu in cpu_list %}
+
+            <option
+
+            value="{{ cpu.id }}"
+
+            {% if cpu2 and cpu.id == cpu2.id %}
+            selected
+            {% endif %}
+
+            >
+
+                {{ cpu.name }}
+
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+    <div class="col-md-2">
+
+        <button
+        class="btn btn-primary w-100"
+        >
+
+            So sánh
+
+        </button>
+
+    </div>
+
+</form>
+
+{% if cpu1 and cpu2 %}
+
+<div class="card">
+
+    <div class="card-body">
+
+        <table
+        class="
+        table
+        table-bordered
+        "
+        >
+
+            <thead>
+
+            <tr>
+
+                <th>
+
+                    Thuộc tính
+
+                </th>
+
+                <th>
+
+                    {{ cpu1.name }}
+
+                </th>
+
+                <th>
+
+                    {{ cpu2.name }}
+
+                </th>
+
+            </tr>
+
+            </thead>
+
+            <tbody>
+
+            <tr>
+
+                <td>
+
+                    CPU Mark
+
+                </td>
+
+                <td>
+
+                    {{ "{:,.0f}".format(cpu1.cpumark or 0) }}
+
+                </td>
+
+                <td>
+
+                    {{ "{:,.0f}".format(cpu2.cpumark or 0) }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>
+
+                    Single Thread
+
+                </td>
+
+                <td>
+
+                    {{ "{:,.0f}".format(cpu1.thread_mark or 0) }}
+
+                </td>
+
+                <td>
+
+                    {{ "{:,.0f}".format(cpu2.thread_mark or 0) }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>
+
+                    Cores
+
+                </td>
+
+                <td>
+
+                    {{ cpu1.cores }}
+
+                </td>
+
+                <td>
+
+                    {{ cpu2.cores }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>
+
+                    Threads
+
+                </td>
+
+                <td>
+
+                    {{ cpu1.threads }}
+
+                </td>
+
+                <td>
+
+                    {{ cpu2.threads }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>
+
+                    Base Clock
+
+                </td>
+
+                <td>
+
+                    {{ cpu1.speed }}
+
+                    MHz
+
+                </td>
+
+                <td>
+
+                    {{ cpu2.speed }}
+
+                    MHz
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>
+
+                    Turbo Clock
+
+                </td>
+
+                <td>
+
+                    {{ cpu1.turbo }}
+
+                    MHz
+
+                </td>
+
+                <td>
+
+                    {{ cpu2.turbo }}
+
+                    MHz
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>
+
+                    TDP
+
+                </td>
+
+                <td>
+
+                    {{ cpu1.tdp }}
+
+                    W
+
+                </td>
+
+                <td>
+
+                    {{ cpu2.tdp }}
+
+                    W
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>
+
+                    Socket
+
+                </td>
+
+                <td>
+
+                    {{ cpu1.socket }}
+
+                </td>
+
+                <td>
+
+                    {{ cpu2.socket }}
+
+                </td>
+
+            </tr>
+
+            </tbody>
+
+        </table>
+        <hr class="my-4">
+
+        <div class="card shadow-sm">
+
+            <div class="card-body">
+
+                <h4>
+
+                    So sánh hiệu năng CPU
+
+                </h4>
+
+                <canvas id="cpuCompareChart"></canvas>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+{% endif %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+new Chart(
+
+    document.getElementById(
+        "cpuCompareChart"
+    ),
+
+    {
+
+        type: "bar",
+
+        data: {
+
+            labels:
+            {{ chart_labels|tojson }},
+
+            datasets: [
+
+                {
+
+                    label:
+                    "CPU Mark",
+
+                    data:
+                    {{ chart_values|tojson }}
+
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true
+
+        }
+
+    }
+
+);
+
+</script>
+{% endblock %}
+
+
+====================================================================================================
+FILE: templates\benchmarks\cpu_detail.html
+====================================================================================================
+[LANGUAGE: html]
+
+{% extends "base.html" %}
+
+{% block title %}
+{{ cpu.name }}
+{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+
+    <a
+    href="/benchmarks/cpu"
+    class="btn btn-outline-secondary"
+    >
+
+        ← Quay lại danh sách
+
+    </a>
+
+</div>
+
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+        <h2 class="mb-4">
+
+            {{ cpu.name }}
+
+        </h2>
+
+        <div class="row">
+
+            <div class="col-md-6">
+
+                <table class="table">
+
+                    <tr>
+
+                        <th>
+                            CPU Mark
+                        </th>
+
+                        <td>
+
+                            {{ "{:,.0f}".format(
+                                cpu.cpumark or 0
+                            ) }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Single Thread
+                        </th>
+
+                        <td>
+
+                            {{ "{:,.0f}".format(
+                                cpu.thread_mark or 0
+                            ) }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Số nhân
+                        </th>
+
+                        <td>
+
+                            {{ cpu.cores }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Số luồng
+                        </th>
+
+                        <td>
+
+                            {{ cpu.threads }}
+
+                        </td>
+
+                    </tr>
+
+                </table>
+
+            </div>
+
+            <div class="col-md-6">
+
+                <table class="table">
+
+                    <tr>
+
+                        <th>
+                            TDP
+                        </th>
+
+                        <td>
+
+                            {{ cpu.tdp }}
+
+                            W
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Socket
+                        </th>
+
+                        <td>
+
+                            {{ cpu.socket }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Loại
+                        </th>
+
+                        <td>
+
+                            {{ cpu.category }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Xếp hạng
+                        </th>
+
+                        <td>
+
+                            #{{ cpu.rank }}
+
+                        </td>
+
+                    </tr>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+====================================================================================================
+FILE: templates\benchmarks\cpu_list.html
+====================================================================================================
+[LANGUAGE: html]
+
+{% extends "base.html" %}
+
+{% block title %}
+CPU Benchmark
+{% endblock %}
+
+{% block content %}
+
+<h2>
+
+CPU Benchmark
+
+</h2>
+
+<form
+method="get"
+class="mb-3"
+>
+
+<input
+
+class="form-control"
+
+name="q"
+
+value="{{ keyword or '' }}"
+
+placeholder="Tìm CPU..."
+
+>
+
+</form>
+
+<table
+class="table table-striped"
+>
+
+<thead>
+
+<tr>
+
+<th>Rank</th>
+
+<th>CPU</th>
+
+<th>CPU Mark</th>
+
+<th>Cores</th>
+
+<th>Threads</th>
+
+<th>TDP</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for cpu in cpus %}
+
+<tr>
+
+<td>
+{{ cpu.rank }}
+</td>
+
+<td>
+
+<a
+
+href="{{ url_for(
+'benchmark.cpu_detail',
+cpu_id=cpu.cpu_id
+) }}"
+
+class="text-decoration-none"
+
+>
+
+{{ cpu.name }}
+
+</a>
+
+</td>
+
+<td>
+{{ cpu.cpumark }}
+</td>
+
+<td>
+{{ cpu.cores }}
+</td>
+
+<td>
+{{ cpu.threads }}
+</td>
+
+<td>
+{{ cpu.tdp }}
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+<nav>
+
+<ul
+class="pagination"
+>
+
+{% for p in range(
+start_page,
+end_page + 1
+) %}
+
+<li
+class="
+page-item
+{% if p == page %}
+active
+{% endif %}
+"
+>
+
+<a
+
+class="page-link"
+
+href="{{ url_for(
+'benchmark.cpu_benchmark',
+page=p,
+q=keyword
+) }}"
+
+>
+
+{{ p }}
+
+</a>
+
+</li>
+
+{% endfor %}
+
+</ul>
+
+</nav>
+
+{% endblock %}
+
+
+====================================================================================================
+FILE: templates\benchmarks\gpu_compare.html
+====================================================================================================
+[LANGUAGE: html]
+
+{% extends "base.html" %}
+
+{% block title %}
+So sánh GPU
+{% endblock %}
+
+{% block content %}
+
+<h2 class="mb-4">
+
+    So sánh GPU
+
+</h2>
+
+<form
+method="get"
+class="row g-3 mb-4"
+>
+
+    <div class="col-md-5">
+
+        <select
+        name="gpu1"
+        class="form-select"
+        >
+
+            <option value="">
+
+                Chọn GPU thứ nhất
+
+            </option>
+
+            {% for gpu in gpu_list %}
+
+            <option
+
+            value="{{ gpu.id }}"
+
+            {% if gpu1 and gpu.id == gpu1.id %}
+            selected
+            {% endif %}
+
+            >
+
+                {{ gpu.name }}
+
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+    <div class="col-md-5">
+
+        <select
+        name="gpu2"
+        class="form-select"
+        >
+
+            <option value="">
+
+                Chọn GPU thứ hai
+
+            </option>
+
+            {% for gpu in gpu_list %}
+
+            <option
+
+            value="{{ gpu.id }}"
+
+            {% if gpu2 and gpu.id == gpu2.id %}
+            selected
+            {% endif %}
+
+            >
+
+                {{ gpu.name }}
+
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+    <div class="col-md-2">
+
+        <button
+        class="btn btn-primary w-100"
+        >
+
+            So sánh
+
+        </button>
+
+    </div>
+
+</form>
+
+{% if gpu1 and gpu2 %}
+
+<div class="card">
+
+    <div class="card-body">
+
+        <table
+        class="
+        table
+        table-bordered
+        "
+        >
+
+            <thead>
+
+            <tr>
+
+                <th>
+
+                    Thuộc tính
+
+                </th>
+
+                <th>
+
+                    {{ gpu1.name }}
+
+                </th>
+
+                <th>
+
+                    {{ gpu2.name }}
+
+                </th>
+
+            </tr>
+
+            </thead>
+
+            <tbody>
+
+            <tr>
+
+                <td>G3D Mark</td>
+
+                <td>
+                    {{ "{:,.0f}".format(gpu1.g3d_mark or 0) }}
+                </td>
+
+                <td>
+                    {{ "{:,.0f}".format(gpu2.g3d_mark or 0) }}
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>G2D Mark</td>
+
+                <td>
+                    {{ "{:,.0f}".format(gpu1.g2d_mark or 0) }}
+                </td>
+
+                <td>
+                    {{ "{:,.0f}".format(gpu2.g2d_mark or 0) }}
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>VRAM</td>
+
+                <td>
+                    {{ gpu1.memory_size }}
+                </td>
+
+                <td>
+                    {{ gpu2.memory_size }}
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>Core Clock</td>
+
+                <td>
+                    {{ gpu1.core_clock }}
+                </td>
+
+                <td>
+                    {{ gpu2.core_clock }}
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>Memory Clock</td>
+
+                <td>
+                    {{ gpu1.memory_clock }}
+                </td>
+
+                <td>
+                    {{ gpu2.memory_clock }}
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>TDP</td>
+
+                <td>
+                    {{ gpu1.tdp }} W
+                </td>
+
+                <td>
+                    {{ gpu2.tdp }} W
+                </td>
+
+            </tr>
+
+            </tbody>
+
+        </table>
+        <hr class="my-4">
+
+        <div class="card shadow-sm">
+
+            <div class="card-body">
+
+                <h4>
+
+                    So sánh hiệu năng GPU
+
+                </h4>
+
+                <canvas
+                    id="gpuCompareChart"
+                ></canvas>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+{% endif %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+new Chart(
+
+    document.getElementById(
+        "gpuCompareChart"
+    ),
+
+    {
+
+        type: "bar",
+
+        data: {
+
+            labels:
+            {{ chart_labels|tojson }},
+
+            datasets: [
+
+                {
+
+                    label:
+                    "G3D Mark",
+
+                    data:
+                    {{ g3d_values|tojson }}
+
+                },
+
+                {
+
+                    label:
+                    "G2D Mark",
+
+                    data:
+                    {{ g2d_values|tojson }}
+
+                },
+
+                {
+
+                    label:
+                    "TDP",
+
+                    data:
+                    {{ tdp_values|tojson }}
+
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true
+
+        }
+
+    }
+
+);
+
+</script>
+{% endblock %}
+
+
+====================================================================================================
+FILE: templates\benchmarks\gpu_detail.html
+====================================================================================================
+[LANGUAGE: html]
+
+{% extends "base.html" %}
+
+{% block title %}
+{{ gpu.name }}
+{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+
+    <a
+    href="/benchmarks/gpu"
+    class="btn btn-outline-secondary"
+    >
+
+        ← Quay lại danh sách
+
+    </a>
+
+</div>
+
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+        <h2 class="mb-4">
+
+            {{ gpu.name }}
+
+        </h2>
+
+        <div class="row">
+
+            <div class="col-md-6">
+
+                <table class="table">
+
+                    <tr>
+
+                        <th>
+                            G3D Mark
+                        </th>
+
+                        <td>
+
+                            {{ "{:,.0f}".format(
+                                gpu.g3d_mark or 0
+                            ) }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            G2D Mark
+                        </th>
+
+                        <td>
+
+                            {{ "{:,.0f}".format(
+                                gpu.g2d_mark or 0
+                            ) }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Bộ nhớ
+                        </th>
+
+                        <td>
+
+                            {{ gpu.memory_size }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Core Clock
+                        </th>
+
+                        <td>
+
+                            {{ gpu.core_clock }}
+
+                        </td>
+
+                    </tr>
+
+                </table>
+
+            </div>
+
+            <div class="col-md-6">
+
+                <table class="table">
+
+                    <tr>
+
+                        <th>
+                            Memory Clock
+                        </th>
+
+                        <td>
+
+                            {{ gpu.memory_clock }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            TDP
+                        </th>
+
+                        <td>
+
+                            {{ gpu.tdp }}
+
+                            W
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Loại
+                        </th>
+
+                        <td>
+
+                            {{ gpu.category }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Xếp hạng
+                        </th>
+
+                        <td>
+
+                            #{{ gpu.rank }}
+
+                        </td>
+
+                    </tr>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+====================================================================================================
+FILE: templates\benchmarks\gpu_list.html
+====================================================================================================
+[LANGUAGE: html]
+
+{% extends "base.html" %}
+
+{% block title %}
+GPU Benchmark
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <div>
+
+        <h2>
+
+            GPU Benchmark
+
+        </h2>
+
+        <p class="text-muted mb-0">
+
+            Bảng xếp hạng hiệu năng GPU (PassMark G3D)
+
+        </p>
+
+    </div>
+
+</div>
+
+<form
+method="get"
+class="row g-2 mb-4"
+>
+
+    <div class="col-md-10">
+
+        <input
+
+            type="text"
+
+            name="q"
+
+            value="{{ keyword or '' }}"
+
+            class="form-control"
+
+            placeholder="RTX 5090, RX 9070 XT..."
+
+        >
+
+    </div>
+
+    <div class="col-md-2">
+
+        <button
+            type="submit"
+            class="btn btn-primary w-100"
+        >
+
+            Tìm kiếm
+
+        </button>
+
+    </div>
+
+</form>
+
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table
+            class="
+            table
+            table-striped
+            table-hover
+            align-middle
+            "
+            >
+
+                <thead class="table-dark">
+
+                    <tr>
+
+                        <th>#</th>
+
+                        <th>GPU</th>
+
+                        <th>G3D Mark</th>
+
+                        <th>G2D Mark</th>
+
+                        <th>VRAM</th>
+
+                        <th>TDP</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                {% for gpu in gpus %}
+
+                    <tr>
+
+                        <td>
+
+                            {{ start_rank + loop.index }}
+
+                        </td>
+
+                        <td>
+
+                        <a
+
+                        href="{{ url_for(
+                        'benchmark.gpu_detail',
+                        gpu_id=gpu.gpu_id
+                        ) }}"
+
+                        class="text-decoration-none"
+
+                        >
+
+                        {{ gpu.name }}
+
+                        </a>
+
+                        </td>
+
+                        <td>
+
+                            {{ "{:,.0f}".format(gpu.g3d_mark or 0) }}
+
+                        </td>
+
+                        <td>
+
+                            {{ "{:,.0f}".format(gpu.g2d_mark or 0) }}
+
+                        </td>
+
+                        <td>
+
+                            {{ gpu.memory_size or "-" }}
+
+                        </td>
+
+                        <td>
+
+                            {% if gpu.tdp %}
+
+                                {{ gpu.tdp }} W
+
+                            {% else %}
+
+                                -
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% if total_pages > 1 %}
+
+<nav class="mt-4">
+
+    <ul
+    class="
+    pagination
+    justify-content-center
+    "
+    >
+
+        {% if page > 1 %}
+
+        <li class="page-item">
+
+            <a
+
+            class="page-link"
+
+            href="{{ url_for(
+                'benchmark.gpu_benchmark',
+                page=page-1,
+                q=keyword
+            ) }}"
+
+            >
+
+                Previous
+
+            </a>
+
+        </li>
+
+        {% endif %}
+
+        {% for p in range(
+            start_page,
+            end_page + 1
+        ) %}
+
+        <li
+
+        class="
+        page-item
+        {% if p == page %}
+        active
+        {% endif %}
+        "
+
+        >
+
+            <a
+
+            class="page-link"
+
+            href="{{ url_for(
+                'benchmark.gpu_benchmark',
+                page=p,
+                q=keyword
+            ) }}"
+
+            >
+
+                {{ p }}
+
+            </a>
+
+        </li>
+
+        {% endfor %}
+
+        {% if page < total_pages %}
+
+        <li class="page-item">
+
+            <a
+
+            class="page-link"
+
+            href="{{ url_for(
+                'benchmark.gpu_benchmark',
+                page=page+1,
+                q=keyword
+            ) }}"
+
+            >
+
+                Next
+
+            </a>
+
+        </li>
+
+        {% endif %}
+
+    </ul>
+
+</nav>
+
+{% endif %}
+
+{% endblock %}
+
+
+====================================================================================================
+FILE: templates\home\index.html
+====================================================================================================
+[LANGUAGE: html]
+
+{% extends "base.html" %}
+
+{% block title %}
+Trang chủ
+{% endblock %}
+
+{% block content %}
+
+<div class="row mb-4">
+
+<div class="col-md-12">
+
+<h1>
+
+Hệ thống Phân Tích
+Linh Kiện Máy Tính
+
+</h1>
+
+<p class="lead">
+
+Dữ liệu được crawl tự động
+từ GearVN
+
+</p>
+
+</div>
+
+</div>
+
+<div class="row">
+
+<div class="col-md-4">
+
+<div class="card">
+
+<div class="card-body text-center">
+
+<h5>Tổng sản phẩm</h5>
+
+<h2>
+
+{{ stats.total_products }}
+
+</h2>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-4">
+
+<div class="card">
+
+<div class="card-body text-center">
+
+<h5>Thương hiệu</h5>
+
+<h2>
+
+{{ stats.total_brands }}
+
+</h2>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-4">
+
+<div class="card">
+
+<div class="card-body text-center">
+
+<h5>Loại sản phẩm</h5>
+
+<h2>
+
+{{ stats.total_categories }}
+
+</h2>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<hr>
+
+<h3>
+
+Sản phẩm mới nhất
+
+</h3>
+
+<div class="row">
+
+{% for product in latest_products %}
+
+<div class="col-md-3 mb-4">
+
+<div class="card product-card h-100">
+
+<img
+
+src="{{ product.image_url }}"
+
+class="card-img-top product-image"
+
+>
+
+<div class="card-body">
+
+<h6>
+
+{{ product.title }}
+
+</h6>
+
+<p>
+
+{{ "{:,.0f}".format(product.price) }}
+
+VNĐ
+
+</p>
+
+<a
+
+href="/products/view/{{ product.product_id }}"
+
+class="btn btn-primary btn-sm"
+
+>
+
+Chi tiết
+
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% endblock %}
+
+
+====================================================================================================
+FILE: templates\products\detail.html
+====================================================================================================
+[LANGUAGE: html]
+
+{% extends "base.html" %}
+
+{% block title %}
+{{ product.title }}
+{% endblock %}
+
+{% block content %}
+
+<div class="row">
+
+    <!-- Ảnh sản phẩm -->
+
+    <div class="col-md-5">
+
+        {% if images %}
+
+        <img
+
+            src="{{ images[0].image_url }}"
+
+            class="img-fluid rounded shadow"
+
+            alt="{{ product.title }}"
+
+        >
+
+        {% endif %}
+
+        <!-- Thumbnail -->
+
+        <div class="row mt-3">
+
+            {% for image in images[:4] %}
+
+            <div class="col-3">
+
+                <img
+
+                    src="{{ image.image_url }}"
+
+                    class="img-fluid border rounded"
+
+                    alt="thumbnail"
+
+                >
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+    <!-- Thông tin sản phẩm -->
+
+    <div class="col-md-7">
+
+        <h2>
+
+            {{ product.title }}
+
+        </h2>
+
+        <hr>
+
+        <p>
+
+            <strong>Hãng:</strong>
+
+            {{ product.vendor }}
+
+        </p>
+
+        <h3 class="text-danger">
+
+            {{ "{:,.0f}".format(product.price) }}
+
+            VNĐ
+
+        </h3>
+
+        {% if product.compare_at_price %}
+
+        <p
+        class="
+        text-muted
+        text-decoration-line-through
+        "
+        >
+
+            {{ "{:,.0f}".format(
+                product.compare_at_price
+            ) }}
+
+            VNĐ
+
+        </p>
+
+        {% endif %}
+
+        <div class="mt-4">
+
+            <button
+            class="btn btn-success btn-lg"
+            >
+
+                Mua ngay
+
+            </button>
+
+            <a
+
+            href="/products/view"
+
+            class="btn btn-outline-secondary btn-lg"
+
+            >
+
+                Quay lại
+
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+<hr class="my-5">
+
+<!-- Thông số -->
+
+<h3 class="mb-3">
+
+    Thông số kỹ thuật
+
+</h3>
+
+<div class="table-responsive">
+
+<table
+class="
+table
+table-striped
+table-bordered
+"
+>
+
+    <thead>
+
+        <tr>
+
+            <th width="35%">
+
+                Thuộc tính
+
+            </th>
+
+            <th>
+
+                Giá trị
+
+            </th>
+
+        </tr>
+
+    </thead>
+
+    <tbody>
+
+    {% for spec in specs %}
+
+        <tr>
+
+            <td>
+
+                {{ spec.spec_name }}
+
+            </td>
+
+            <td>
+
+                {{ spec.spec_value }}
+
+            </td>
+
+        </tr>
+
+    {% endfor %}
+
+    </tbody>
+
+</table>
+
+</div>
+
+<hr class="my-5">
+
+<!-- Mô tả -->
+
+<h3>
+
+    Mô tả sản phẩm
+
+</h3>
+
+<div
+class="
+card
+card-body
+shadow-sm
+"
+>
+
+    {{ product.description|safe }}
+
+</div>
+
+{% endblock %}
+
+
+====================================================================================================
+FILE: templates\products\list.html
+====================================================================================================
+[LANGUAGE: html]
+
+{% extends "base.html" %}
+
+{% block title %}
+Danh sách sản phẩm
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <div>
+
+        <h2>Danh sách sản phẩm</h2>
+
+        <p class="text-muted mb-0">
+            Tìm thấy
+            <strong>{{ total_products }}</strong>
+            sản phẩm
+        </p>
+
+    </div>
+
+    <span class="text-muted">
+
+        Trang {{ page }} / {{ total_pages }}
+
+    </span>
+
+</div>
+
+<form method="get" class="row g-2 mb-4">
+
+    <div class="col-md-3">
+
+        <select
+        name="vendor"
+        class="form-select"
+        >
+
+            <option value="">
+                Tất cả hãng
+            </option>
+
+            {% for vendor in vendors %}
+
+            <option
+                value="{{ vendor }}"
+                {% if vendor == selected_vendor %}
+                selected
+                {% endif %}
+            >
+
+                {{ vendor }}
+
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+    <div class="col-md-2">
+
+        <select
+            name="type"
+            class="form-select"
+            >
+
+            <option value="">
+                Tất cả loại
+            </option>
+
+            {% for item, count in category_counts.items() %}
+
+            {% if count >= 5 %}
+
+            <option
+
+            value="{{ item }}"
+
+            {% if item == selected_type %}
+            selected
+            {% endif %}
+
+            >
+
+            {{ item }}
+            ({{ count }})
+
+            </option>
+
+            {% endif %}
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+    <div class="col-md-2">
+
+        <select
+        name="price"
+        class="form-select"
+        >
+
+            <option value="">
+                Tất cả giá
+            </option>
+
+            <option value="0-5000000">
+                Dưới 5 triệu
+            </option>
+
+            <option value="5000000-10000000">
+                5 - 10 triệu
+            </option>
+
+            <option value="10000000-20000000">
+                10 - 20 triệu
+            </option>
+
+            <option value="20000000+">
+                Trên 20 triệu
+            </option>
+
+        </select>
+
+    </div>
+
+    <div class="col-md-3">
+
+        <select
+        name="sort"
+        class="form-select"
+        >
+
+            <option value="">
+                Mới nhất
+            </option>
+
+            <option value="price_asc">
+                Giá tăng dần
+            </option>
+
+            <option value="price_desc">
+                Giá giảm dần
+            </option>
+
+        </select>
+
+    </div>
+
+    <div class="col-md-2">
+
+        <div class="d-flex gap-2">
+
+            <button
+            type="submit"
+            class="btn btn-primary"
+            >
+
+                Lọc
+
+            </button>
+
+            <a
+            href="/products/view"
+            class="btn btn-secondary"
+            >
+
+                Reset
+
+            </a>
+
+        </div>
+
+    </div>
+
+</form>
+
+<div class="row">
+
+    <div class="col-md-3">
+
+        <div class="card">
+
+            <div class="card-header">
+
+                <strong>
+
+                    Danh mục
+
+                </strong>
+
+            </div>
+
+            <div class="list-group list-group-flush">
+
+                <a
+
+                href="{{ url_for(
+                'products.product_list'
+                ) }}"
+
+                class="
+                list-group-item
+                list-group-item-action
+                {% if not selected_type %}
+                active
+                {% endif %}
+                "
+
+                >
+
+                Tất cả sản phẩm
+
+                </a>
+
+                {% for category, count in category_counts.items() %}
+
+                {% if count >= 5 %}
+
+                <a
+
+                href="{{ url_for(
+                'products.product_list',
+                type=category,
+                vendor=selected_vendor,
+                price=selected_price,
+                sort=selected_sort
+                ) }}"
+
+                class="
+                list-group-item
+                list-group-item-action
+                d-flex
+                justify-content-between
+                align-items-center
+                {% if category == selected_type %}
+                active
+                {% endif %}
+                "
+
+                >
+
+                <span>
+
+                {{ category }}
+
+                </span>
+
+                <span class="badge bg-secondary">
+
+                {{ count }}
+
+                </span>
+
+                </a>
+
+                {% endif %}
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-9">
+
+        <div class="row">
+
+            {% for product in products %}
+
+            <div class="col-lg-4 col-md-6 mb-4">
+
+                <div class="card h-100">
+
+                    <img
+
+                        src="{{ product.image_url }}"
+
+                        class="card-img-top"
+
+                        style="
+                        height:220px;
+                        object-fit:contain;
+                        "
+
+                    >
+
+                    <div class="card-body">
+
+                        <h6>
+
+                            {{ product.title }}
+
+                        </h6>
+
+                        <p class="text-muted">
+
+                            {{ product.vendor }}
+
+                        </p>
+
+                        <p class="text-danger">
+
+                            {{ "{:,.0f}".format(product.price) }}
+
+                            VNĐ
+
+                        </p>
+
+                        <a
+
+                        href="/products/view/{{ product.product_id }}"
+
+                        class="btn btn-primary w-100"
+
+                        >
+
+                            Chi tiết
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% if not products %}
+
+<div class="alert alert-warning mt-4">
+
+    Không tìm thấy sản phẩm phù hợp.
+
+</div>
+
+{% endif %}
+
+<hr>
+
+<nav>
+
+<ul class="pagination justify-content-center">
+
+{% if page > 1 %}
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="{{ url_for(
+'products.product_list',
+page=page-1,
+vendor=selected_vendor,
+type=selected_type,
+price=selected_price,
+sort=selected_sort
+) }}"
+>
+
+Previous
+
+</a>
+
+</li>
+
+{% endif %}
+
+{% for p in range(start_page, end_page + 1) %}
+
+<li
+class="page-item {% if p == page %}active{% endif %}"
+>
+
+<a
+
+class="page-link"
+
+href="{{ url_for(
+'products.product_list',
+page=p,
+vendor=selected_vendor,
+type=selected_type,
+price=selected_price,
+sort=selected_sort
+) }}"
+>
+
+{{ p }}
+
+</a>
+
+</li>
+
+{% endfor %}
+
+{% if page < total_pages %}
+
+<li class="page-item">
+
+<a
+
+class="page-link"
+
+href="{{ url_for(
+'products.product_list',
+page=page+1,
+vendor=selected_vendor,
+type=selected_type,
+price=selected_price,
+sort=selected_sort
+) }}"
+>
+
+Next
+
+</a>
+
+</li>
+
+{% endif %}
+
+</ul>
+
+</nav>
+
+{% endblock %}
+
+
+====================================================================================================
+FILE: templates\products\search.html
+====================================================================================================
+[LANGUAGE: html]
+
+{% extends "base.html" %}
+
+{% block title %}
+Tìm kiếm sản phẩm
+{% endblock %}
+
+{% block content %}
+
+<h2>
+
+    Kết quả tìm kiếm
+
+</h2>
+
+{% if keyword %}
+
+<p class="text-muted">
+
+    Từ khóa:
+
+    <strong>
+
+        {{ keyword }}
+
+    </strong>
+
+    -
+
+    {{ products|length }}
+
+    kết quả
+
+</p>
+
+{% endif %}
+
+<div class="row">
+
+{% for product in products %}
+
+<div
+class="
+col-lg-3
+col-md-4
+col-sm-6
+mb-4
+"
+>
+
+    <div
+    class="
+    card
+    h-100
+    "
+    >
+
+        <img
+
+            src="{{ product.image_url }}"
+
+            class="card-img-top"
+
+            style="
+            height:220px;
+            object-fit:contain;
+            "
+
+        >
+
+        <div class="card-body">
+
+            <h6>
+
+                {{ product.title }}
+
+            </h6>
+
+            <p class="text-muted">
+
+                {{ product.vendor }}
+
+            </p>
+
+            <p class="text-danger">
+
+                {{ "{:,.0f}".format(
+                    product.price
+                ) }}
+
+                VNĐ
+
+            </p>
+
+            <a
+
+            href="/products/view/{{ product.product_id }}"
+
+            class="
+            btn
+            btn-primary
+            w-100
+            "
+
+            >
+
+                Chi tiết
+
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% endblock %}
+
+
+====================================================================================================
+FILE: utils\helpers.py
+====================================================================================================
+[LANGUAGE: python]
+
+
+
+
+====================================================================================================
+FILE: utils\logger.py
+====================================================================================================
+[LANGUAGE: python]
+
+
+
+
+====================================================================================================
+FILE: utils\rate_limiter.py
+====================================================================================================
+[LANGUAGE: python]
+
+
+
+
+====================================================================================================
+FILE: utils\text_normalizer.py
+====================================================================================================
+[LANGUAGE: python]
+
+
+
+
+====================================================================================================
+FILE: utils\__init__.py
+====================================================================================================
+[LANGUAGE: python]
+
+
+

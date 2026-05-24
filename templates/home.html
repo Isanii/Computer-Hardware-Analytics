@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}
+Computer Hardware Analytics
+{% endblock %}
+
+{% block content %}
+
+<div
+class="
+p-5
+mb-4
+bg-light
+rounded-3
+"
+>
+
+    <div class="container-fluid">
+
+        <h1
+        class="display-5 fw-bold"
+        >
+
+            Computer Hardware Analytics
+
+        </h1>
+
+        <p
+        class="fs-5"
+        >
+
+            Hệ thống phân tích
+            linh kiện máy tính
+
+        </p>
+
+        <a
+
+        href="/products/view"
+
+        class="
+        btn
+        btn-primary
+        btn-lg
+        "
+
+        >
+
+            Xem sản phẩm
+
+        </a>
+
+    </div>
+
+</div>
+
+<div class="row mb-5">
+
+    <div class="col-md-6">
+
+        <div
+        class="
+        card
+        text-center
+        "
+        >
+
+            <div class="card-body">
+
+                <h3>
+
+                    {{ total_products }}
+
+                </h3>
+
+                <p>
+
+                    Sản phẩm
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-6">
+
+        <div
+        class="
+        card
+        text-center
+        "
+        >
+
+            <div class="card-body">
+
+                <h3>
+
+                    {{ total_vendors }}
+
+                </h3>
+
+                <p>
+
+                    Hãng sản xuất
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<h2
+class="mb-4"
+>
+
+    Sản phẩm mới nhất
+
+</h2>
+
+<div class="row">
+
+{% for product in latest_products %}
+
+<div
+class="
+col-lg-3
+col-md-4
+col-sm-6
+mb-4
+"
+>
+
+    <div
+    class="
+    card
+    h-100
+    "
+    >
+
+        <img
+
+            src="{{ product.image_url }}"
+
+            class="card-img-top"
+
+            style="
+            height:220px;
+            object-fit:contain;
+            "
+
+        >
+
+        <div class="card-body">
+
+            <h6>
+
+                {{ product.title }}
+
+            </h6>
+
+            <p
+            class="text-danger"
+            >
+
+                {{ "{:,.0f}".format(
+                    product.price
+                ) }}
+
+                VNĐ
+
+            </p>
+
+            <a
+
+            href="/products/view/{{ product.product_id }}"
+
+            class="
+            btn
+            btn-primary
+            w-100
+            "
+
+            >
+
+                Chi tiết
+
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% endblock %}

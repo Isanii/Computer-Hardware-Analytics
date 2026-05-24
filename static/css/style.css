@@ -1,0 +1,17 @@
+.product-image {
+    height: 220px;
+    object-fit: contain;
+    padding: 10px;
+}
+
+.card {
+    transition: 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+}
+
+table td {
+    vertical-align: middle;
+}

@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}
+Trang chủ
+{% endblock %}
+
+{% block content %}
+
+<div class="row mb-4">
+
+<div class="col-md-12">
+
+<h1>
+
+Hệ thống Phân Tích
+Linh Kiện Máy Tính
+
+</h1>
+
+<p class="lead">
+
+Dữ liệu được crawl tự động
+từ GearVN
+
+</p>
+
+</div>
+
+</div>
+
+<div class="row">
+
+<div class="col-md-4">
+
+<div class="card">
+
+<div class="card-body text-center">
+
+<h5>Tổng sản phẩm</h5>
+
+<h2>
+
+{{ stats.total_products }}
+
+</h2>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-4">
+
+<div class="card">
+
+<div class="card-body text-center">
+
+<h5>Thương hiệu</h5>
+
+<h2>
+
+{{ stats.total_brands }}
+
+</h2>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-4">
+
+<div class="card">
+
+<div class="card-body text-center">
+
+<h5>Loại sản phẩm</h5>
+
+<h2>
+
+{{ stats.total_categories }}
+
+</h2>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<hr>
+
+<h3>
+
+Sản phẩm mới nhất
+
+</h3>
+
+<div class="row">
+
+{% for product in latest_products %}
+
+<div class="col-md-3 mb-4">
+
+<div class="card product-card h-100">
+
+<img
+
+src="{{ product.image_url }}"
+
+class="card-img-top product-image"
+
+>
+
+<div class="card-body">
+
+<h6>
+
+{{ product.title }}
+
+</h6>
+
+<p>
+
+{{ "{:,.0f}".format(product.price) }}
+
+VNĐ
+
+</p>
+
+<a
+
+href="/products/view/{{ product.product_id }}"
+
+class="btn btn-primary btn-sm"
+
+>
+
+Chi tiết
+
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% endblock %}

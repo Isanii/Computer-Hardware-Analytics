@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ cpu.name }}
+{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+
+    <a
+    href="/benchmarks/cpu"
+    class="btn btn-outline-secondary"
+    >
+
+        ← Quay lại danh sách
+
+    </a>
+
+</div>
+
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+        <h2 class="mb-4">
+
+            {{ cpu.name }}
+
+        </h2>
+
+        <div class="row">
+
+            <div class="col-md-6">
+
+                <table class="table">
+
+                    <tr>
+
+                        <th>
+                            CPU Mark
+                        </th>
+
+                        <td>
+
+                            {{ "{:,.0f}".format(
+                                cpu.cpumark or 0
+                            ) }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Single Thread
+                        </th>
+
+                        <td>
+
+                            {{ "{:,.0f}".format(
+                                cpu.thread_mark or 0
+                            ) }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Số nhân
+                        </th>
+
+                        <td>
+
+                            {{ cpu.cores }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Số luồng
+                        </th>
+
+                        <td>
+
+                            {{ cpu.threads }}
+
+                        </td>
+
+                    </tr>
+
+                </table>
+
+            </div>
+
+            <div class="col-md-6">
+
+                <table class="table">
+
+                    <tr>
+
+                        <th>
+                            TDP
+                        </th>
+
+                        <td>
+
+                            {{ cpu.tdp }}
+
+                            W
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Socket
+                        </th>
+
+                        <td>
+
+                            {{ cpu.socket }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Loại
+                        </th>
+
+                        <td>
+
+                            {{ cpu.category }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Xếp hạng
+                        </th>
+
+                        <td>
+
+                            #{{ cpu.rank }}
+
+                        </td>
+
+                    </tr>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

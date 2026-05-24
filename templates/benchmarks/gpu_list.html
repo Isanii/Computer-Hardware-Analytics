@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}
+GPU Benchmark
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <div>
+
+        <h2>
+
+            GPU Benchmark
+
+        </h2>
+
+        <p class="text-muted mb-0">
+
+            Bảng xếp hạng hiệu năng GPU (PassMark G3D)
+
+        </p>
+
+    </div>
+
+</div>
+
+<form
+method="get"
+class="row g-2 mb-4"
+>
+
+    <div class="col-md-10">
+
+        <input
+
+            type="text"
+
+            name="q"
+
+            value="{{ keyword or '' }}"
+
+            class="form-control"
+
+            placeholder="RTX 5090, RX 9070 XT..."
+
+        >
+
+    </div>
+
+    <div class="col-md-2">
+
+        <button
+            type="submit"
+            class="btn btn-primary w-100"
+        >
+
+            Tìm kiếm
+
+        </button>
+
+    </div>
+
+</form>
+
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+        <div class="table-responsive">
+
+            <table
+            class="
+            table
+            table-striped
+            table-hover
+            align-middle
+            "
+            >
+
+                <thead class="table-dark">
+
+                    <tr>
+
+                        <th>#</th>
+
+                        <th>GPU</th>
+
+                        <th>G3D Mark</th>
+
+                        <th>G2D Mark</th>
+
+                        <th>VRAM</th>
+
+                        <th>TDP</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                {% for gpu in gpus %}
+
+                    <tr>
+
+                        <td>
+
+                            {{ start_rank + loop.index }}
+
+                        </td>
+
+                        <td>
+
+                        <a
+
+                        href="{{ url_for(
+                        'benchmark.gpu_detail',
+                        gpu_id=gpu.gpu_id
+                        ) }}"
+
+                        class="text-decoration-none"
+
+                        >
+
+                        {{ gpu.name }}
+
+                        </a>
+
+                        </td>
+
+                        <td>
+
+                            {{ "{:,.0f}".format(gpu.g3d_mark or 0) }}
+
+                        </td>
+
+                        <td>
+
+                            {{ "{:,.0f}".format(gpu.g2d_mark or 0) }}
+
+                        </td>
+
+                        <td>
+
+                            {{ gpu.memory_size or "-" }}
+
+                        </td>
+
+                        <td>
+
+                            {% if gpu.tdp %}
+
+                                {{ gpu.tdp }} W
+
+                            {% else %}
+
+                                -
+
+                            {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% if total_pages > 1 %}
+
+<nav class="mt-4">
+
+    <ul
+    class="
+    pagination
+    justify-content-center
+    "
+    >
+
+        {% if page > 1 %}
+
+        <li class="page-item">
+
+            <a
+
+            class="page-link"
+
+            href="{{ url_for(
+                'benchmark.gpu_benchmark',
+                page=page-1,
+                q=keyword
+            ) }}"
+
+            >
+
+                Previous
+
+            </a>
+
+        </li>
+
+        {% endif %}
+
+        {% for p in range(
+            start_page,
+            end_page + 1
+        ) %}
+
+        <li
+
+        class="
+        page-item
+        {% if p == page %}
+        active
+        {% endif %}
+        "
+
+        >
+
+            <a
+
+            class="page-link"
+
+            href="{{ url_for(
+                'benchmark.gpu_benchmark',
+                page=p,
+                q=keyword
+            ) }}"
+
+            >
+
+                {{ p }}
+
+            </a>
+
+        </li>
+
+        {% endfor %}
+
+        {% if page < total_pages %}
+
+        <li class="page-item">
+
+            <a
+
+            class="page-link"
+
+            href="{{ url_for(
+                'benchmark.gpu_benchmark',
+                page=page+1,
+                q=keyword
+            ) }}"
+
+            >
+
+                Next
+
+            </a>
+
+        </li>
+
+        {% endif %}
+
+    </ul>
+
+</nav>
+
+{% endif %}
+
+{% endblock %}

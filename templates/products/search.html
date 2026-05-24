@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}
+Tìm kiếm sản phẩm
+{% endblock %}
+
+{% block content %}
+
+<h2>
+
+    Kết quả tìm kiếm
+
+</h2>
+
+{% if keyword %}
+
+<p class="text-muted">
+
+    Từ khóa:
+
+    <strong>
+
+        {{ keyword }}
+
+    </strong>
+
+    -
+
+    {{ products|length }}
+
+    kết quả
+
+</p>
+
+{% endif %}
+
+<div class="row">
+
+{% for product in products %}
+
+<div
+class="
+col-lg-3
+col-md-4
+col-sm-6
+mb-4
+"
+>
+
+    <div
+    class="
+    card
+    h-100
+    "
+    >
+
+        <img
+
+            src="{{ product.image_url }}"
+
+            class="card-img-top"
+
+            style="
+            height:220px;
+            object-fit:contain;
+            "
+
+        >
+
+        <div class="card-body">
+
+            <h6>
+
+                {{ product.title }}
+
+            </h6>
+
+            <p class="text-muted">
+
+                {{ product.vendor }}
+
+            </p>
+
+            <p class="text-danger">
+
+                {{ "{:,.0f}".format(
+                    product.price
+                ) }}
+
+                VNĐ
+
+            </p>
+
+            <a
+
+            href="/products/view/{{ product.product_id }}"
+
+            class="
+            btn
+            btn-primary
+            w-100
+            "
+
+            >
+
+                Chi tiết
+
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% endblock %}

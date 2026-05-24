@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+
+{% block title %}
+So sánh CPU
+{% endblock %}
+
+{% block content %}
+
+<h2 class="mb-4">
+
+    So sánh CPU
+
+</h2>
+
+<form
+method="get"
+class="row g-3 mb-4"
+>
+
+    <div class="col-md-5">
+
+        <select
+        name="cpu1"
+        class="form-select"
+        >
+
+            <option value="">
+
+                Chọn CPU thứ nhất
+
+            </option>
+
+            {% for cpu in cpu_list %}
+
+            <option
+
+            value="{{ cpu.cpu_id }}"
+
+            {% if cpu1 and cpu.id == cpu1.id %}
+            selected
+            {% endif %}
+
+            >
+
+                {{ cpu.name }}
+
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+    <div class="col-md-5">
+
+        <select
+        name="cpu2"
+        class="form-select"
+        >
+
+            <option value="">
+
+                Chọn CPU thứ hai
+
+            </option>
+
+            {% for cpu in cpu_list %}
+
+            <option
+
+            value="{{ cpu.cpu_id }}"
+
+            {% if cpu2 and cpu.id == cpu2.id %}
+            selected
+            {% endif %}
+
+            >
+
+                {{ cpu.name }}
+
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+    <div class="col-md-2">
+
+        <button
+        class="btn btn-primary w-100"
+        >
+
+            So sánh
+
+        </button>
+
+    </div>
+
+</form>
+
+{% if cpu1 and cpu2 %}
+
+<div class="card">
+
+    <div class="card-body">
+
+        <table
+        class="
+        table
+        table-bordered
+        "
+        >
+
+            <thead>
+
+            <tr>
+
+                <th>
+
+                    Thuộc tính
+
+                </th>
+
+                <th>
+
+                    {{ cpu1.name }}
+
+                </th>
+
+                <th>
+
+                    {{ cpu2.name }}
+
+                </th>
+
+            </tr>
+
+            </thead>
+
+            <tbody>
+
+            <tr>
+
+                <td>
+
+                    CPU Mark
+
+                </td>
+
+                <td>
+
+                    {{ "{:,.0f}".format(cpu1.cpumark or 0) }}
+
+                </td>
+
+                <td>
+
+                    {{ "{:,.0f}".format(cpu2.cpumark or 0) }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>
+
+                    Single Thread
+
+                </td>
+
+                <td>
+
+                    {{ "{:,.0f}".format(cpu1.thread_mark or 0) }}
+
+                </td>
+
+                <td>
+
+                    {{ "{:,.0f}".format(cpu2.thread_mark or 0) }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>
+
+                    Cores
+
+                </td>
+
+                <td>
+
+                    {{ cpu1.cores }}
+
+                </td>
+
+                <td>
+
+                    {{ cpu2.cores }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>
+
+                    Threads
+
+                </td>
+
+                <td>
+
+                    {{ cpu1.threads }}
+
+                </td>
+
+                <td>
+
+                    {{ cpu2.threads }}
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>
+
+                    Base Clock
+
+                </td>
+
+                <td>
+
+                    {{ cpu1.speed }}
+
+                    MHz
+
+                </td>
+
+                <td>
+
+                    {{ cpu2.speed }}
+
+                    MHz
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>
+
+                    Turbo Clock
+
+                </td>
+
+                <td>
+
+                    {{ cpu1.turbo }}
+
+                    MHz
+
+                </td>
+
+                <td>
+
+                    {{ cpu2.turbo }}
+
+                    MHz
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>
+
+                    TDP
+
+                </td>
+
+                <td>
+
+                    {{ cpu1.tdp }}
+
+                    W
+
+                </td>
+
+                <td>
+
+                    {{ cpu2.tdp }}
+
+                    W
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td>
+
+                    Socket
+
+                </td>
+
+                <td>
+
+                    {{ cpu1.socket }}
+
+                </td>
+
+                <td>
+
+                    {{ cpu2.socket }}
+
+                </td>
+
+            </tr>
+
+            </tbody>
+
+        </table>
+        <hr class="my-4">
+
+        <div class="card shadow-sm">
+
+            <div class="card-body">
+
+                <h4>
+
+                    So sánh hiệu năng CPU
+
+                </h4>
+
+                <canvas id="cpuCompareChart"></canvas>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+{% endif %}
+{% if cpu1 and cpu2 %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+new Chart(
+
+    document.getElementById(
+        "cpuCompareChart"
+    ),
+
+    {
+
+        type: "bar",
+
+        data: {
+
+            labels:
+            {{ chart_labels|tojson }},
+
+            datasets: [
+
+                {
+
+                    label:
+                    "CPU Mark",
+
+                    data:
+                    {{ cpu_mark_values|tojson }}
+
+                },
+
+                {
+
+                    label:
+                    "Single Thread",
+
+                    data:
+                    {{ thread_values|tojson }}
+
+                },
+
+                {
+
+                    label:
+                    "Số nhân",
+
+                    data:
+                    {{ core_values|tojson }}
+
+                },
+
+                {
+
+                    label:
+                    "Số luồng",
+
+                    data:
+                    {{ thread_count_values|tojson }}
+
+                }
+
+            ]
+
+        }
+
+    }
+
+);
+
+</script>
+
+{% endif %}
+{% endblock %}

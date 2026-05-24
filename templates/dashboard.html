@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+
+{% block title %}
+Bảng Điều Khiển
+{% endblock %}
+
+{% block content %}
+
+<h2 class="mb-4">
+
+    Bảng Điều Khiển Phân Tích Phần Cứng
+
+</h2>
+
+<div class="row">
+
+    <div class="col-md-3">
+
+        <div
+        class="
+        card
+        text-center
+        shadow-sm
+        mb-4
+        "
+        >
+
+            <div class="card-body">
+
+                <h5>
+
+                    Sản phẩm
+
+                </h5>
+
+                <h2>
+
+                    {{ "{:,}".format(stats.products) }}
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-3">
+
+        <div
+        class="
+        card
+        text-center
+        shadow-sm
+        mb-4
+        "
+        >
+
+            <div class="card-body">
+
+                <h5>
+
+                    CPU
+
+                </h5>
+
+                <h2>
+
+                    {{ "{:,}".format(stats.cpus) }}
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-3">
+
+        <div
+        class="
+        card
+        text-center
+        shadow-sm
+        mb-4
+        "
+        >
+
+            <div class="card-body">
+
+                <h5>
+
+                    GPU
+
+                </h5>
+
+                <h2>
+
+                    {{ "{:,}".format(stats.gpus) }}
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-3">
+
+        <div
+        class="
+        card
+        text-center
+        shadow-sm
+        mb-4
+        "
+        >
+
+            <div class="card-body">
+
+                <h5>
+
+                    Hãng sản xuất
+
+                </h5>
+
+                <h2>
+
+                    {{ "{:,}".format(stats.vendors) }}
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- HÀNG 1 -->
+
+<div class="row">
+
+    <div class="col-lg-6 mb-4">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <h4>
+
+                    Top 10 CPU mạnh nhất
+
+                </h4>
+
+                <canvas id="cpuChart"></canvas>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-lg-6 mb-4">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <h4>
+
+                    Top 10 GPU mạnh nhất
+
+                </h4>
+
+                <canvas id="gpuChart"></canvas>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+
+</div>
+
+<!-- HÀNG 2 -->
+
+<div class="row">
+
+    <div class="col-lg-6 mb-4">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <h4>
+
+                    Phân bố loại sản phẩm
+
+                </h4>
+
+                <canvas id="typeChart"></canvas>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-lg-6 mb-4">
+
+        <div class="card shadow-sm h-100">
+
+            <div class="card-body">
+
+                <h4>
+
+                    Giá trung bình theo hãng
+
+                </h4>
+
+                <canvas id="priceChart"></canvas>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+//
+// CPU
+//
+
+new Chart(
+
+    document.getElementById(
+        "cpuChart"
+    ),
+
+    {
+
+        type: "bar",
+
+        data: {
+
+            labels:
+            {{ labels|tojson }},
+
+            datasets: [
+
+                {
+
+                    label:
+                    "Điểm hiệu năng CPU",
+
+                    data:
+                    {{ values|tojson }}
+
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            plugins: {
+
+                legend: {
+
+                    display: false
+
+                }
+
+            }
+
+        }
+
+    }
+
+);
+
+//
+// GPU
+//
+
+new Chart(
+
+    document.getElementById(
+        "gpuChart"
+    ),
+
+    {
+
+        type: "bar",
+
+        data: {
+
+            labels:
+            {{ gpu_labels|tojson }},
+
+            datasets: [
+
+                {
+
+                    label:
+                    "Điểm hiệu năng GPU",
+
+                    data:
+                    {{ gpu_values|tojson }}
+
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            plugins: {
+
+                legend: {
+
+                    display: false
+
+                }
+
+            }
+
+        }
+
+    }
+
+);
+
+//
+// PHÂN LOẠI SẢN PHẨM
+//
+
+new Chart(
+
+    document.getElementById(
+        "typeChart"
+    ),
+
+    {
+
+        type: "pie",
+
+        data: {
+
+            labels:
+            {{ type_labels|tojson }},
+
+            datasets: [
+
+                {
+
+                    data:
+                    {{ type_values|tojson }}
+
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true
+
+        }
+
+    }
+
+);
+
+//
+// GIÁ TRUNG BÌNH
+//
+
+new Chart(
+
+    document.getElementById(
+        "priceChart"
+    ),
+
+    {
+
+        type: "bar",
+
+        data: {
+
+            labels:
+            {{ price_labels|tojson }},
+
+            datasets: [
+
+                {
+
+                    label:
+                    "Giá trung bình (VNĐ)",
+
+                    data:
+                    {{ price_values|tojson }}
+
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true
+
+        }
+
+    }
+
+);
+
+</script>
+
+{% endblock %}

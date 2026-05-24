@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ gpu.name }}
+{% endblock %}
+
+{% block content %}
+
+<div class="mb-4">
+
+    <a
+    href="/benchmarks/gpu"
+    class="btn btn-outline-secondary"
+    >
+
+        ← Quay lại danh sách
+
+    </a>
+
+</div>
+
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+        <h2 class="mb-4">
+
+            {{ gpu.name }}
+
+        </h2>
+
+        <div class="row">
+
+            <div class="col-md-6">
+
+                <table class="table">
+
+                    <tr>
+
+                        <th>
+                            G3D Mark
+                        </th>
+
+                        <td>
+
+                            {{ "{:,.0f}".format(
+                                gpu.g3d_mark or 0
+                            ) }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            G2D Mark
+                        </th>
+
+                        <td>
+
+                            {{ "{:,.0f}".format(
+                                gpu.g2d_mark or 0
+                            ) }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Bộ nhớ
+                        </th>
+
+                        <td>
+
+                            {{ gpu.memory_size }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Core Clock
+                        </th>
+
+                        <td>
+
+                            {{ gpu.core_clock }}
+
+                        </td>
+
+                    </tr>
+
+                </table>
+
+            </div>
+
+            <div class="col-md-6">
+
+                <table class="table">
+
+                    <tr>
+
+                        <th>
+                            Memory Clock
+                        </th>
+
+                        <td>
+
+                            {{ gpu.memory_clock }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            TDP
+                        </th>
+
+                        <td>
+
+                            {{ gpu.tdp }}
+
+                            W
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Loại
+                        </th>
+
+                        <td>
+
+                            {{ gpu.category }}
+
+                        </td>
+
+                    </tr>
+
+                    <tr>
+
+                        <th>
+                            Xếp hạng
+                        </th>
+
+                        <td>
+
+                            #{{ gpu.rank }}
+
+                        </td>
+
+                    </tr>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

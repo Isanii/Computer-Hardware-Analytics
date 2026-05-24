@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+
+{% block title %}
+Danh sách sản phẩm
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <div>
+
+        <h2>Danh sách sản phẩm</h2>
+
+        <p class="text-muted mb-0">
+            Tìm thấy
+            <strong>{{ total_products }}</strong>
+            sản phẩm
+        </p>
+
+    </div>
+
+    <span class="text-muted">
+
+        Trang {{ page }} / {{ total_pages }}
+
+    </span>
+
+</div>
+
+<form method="get" class="row g-2 mb-4">
+
+    <div class="col-md-3">
+
+        <select
+        name="vendor"
+        class="form-select"
+        >
+
+            <option value="">
+                Tất cả hãng
+            </option>
+
+            {% for vendor in vendors %}
+
+            <option
+                value="{{ vendor }}"
+                {% if vendor == selected_vendor %}
+                selected
+                {% endif %}
+            >
+
+                {{ vendor }}
+
+            </option>
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+    <div class="col-md-2">
+
+        <select
+            name="type"
+            class="form-select"
+            >
+
+            <option value="">
+                Tất cả loại
+            </option>
+
+            {% for item, count in category_counts.items() %}
+
+            {% if count >= 5 %}
+
+            <option
+
+            value="{{ item }}"
+
+            {% if item == selected_type %}
+            selected
+            {% endif %}
+
+            >
+
+            {{ item }}
+            ({{ count }})
+
+            </option>
+
+            {% endif %}
+
+            {% endfor %}
+
+        </select>
+
+    </div>
+
+    <div class="col-md-2">
+
+        <select
+        name="price"
+        class="form-select"
+        >
+
+            <option value="">
+                Tất cả giá
+            </option>
+
+            <option value="0-5000000">
+                Dưới 5 triệu
+            </option>
+
+            <option value="5000000-10000000">
+                5 - 10 triệu
+            </option>
+
+            <option value="10000000-20000000">
+                10 - 20 triệu
+            </option>
+
+            <option value="20000000+">
+                Trên 20 triệu
+            </option>
+
+        </select>
+
+    </div>
+
+    <div class="col-md-3">
+
+        <select
+        name="sort"
+        class="form-select"
+        >
+
+            <option value="">
+                Mới nhất
+            </option>
+
+            <option value="price_asc">
+                Giá tăng dần
+            </option>
+
+            <option value="price_desc">
+                Giá giảm dần
+            </option>
+
+        </select>
+
+    </div>
+
+    <div class="col-md-2">
+
+        <div class="d-flex gap-2">
+
+            <button
+            type="submit"
+            class="btn btn-primary"
+            >
+
+                Lọc
+
+            </button>
+
+            <a
+            href="/products/view"
+            class="btn btn-secondary"
+            >
+
+                Reset
+
+            </a>
+
+        </div>
+
+    </div>
+
+</form>
+
+<div class="row">
+
+    <div class="col-md-3">
+
+        <div class="card">
+
+            <div class="card-header">
+
+                <strong>
+
+                    Danh mục
+
+                </strong>
+
+            </div>
+
+            <div class="list-group list-group-flush">
+
+                <a
+
+                href="{{ url_for(
+                'products.product_list'
+                ) }}"
+
+                class="
+                list-group-item
+                list-group-item-action
+                {% if not selected_type %}
+                active
+                {% endif %}
+                "
+
+                >
+
+                Tất cả sản phẩm
+
+                </a>
+
+                {% for category, count in category_counts.items() %}
+
+                {% if count >= 5 %}
+
+                <a
+
+                href="{{ url_for(
+                'products.product_list',
+                type=category,
+                vendor=selected_vendor,
+                price=selected_price,
+                sort=selected_sort
+                ) }}"
+
+                class="
+                list-group-item
+                list-group-item-action
+                d-flex
+                justify-content-between
+                align-items-center
+                {% if category == selected_type %}
+                active
+                {% endif %}
+                "
+
+                >
+
+                <span>
+
+                {{ category }}
+
+                </span>
+
+                <span class="badge bg-secondary">
+
+                {{ count }}
+
+                </span>
+
+                </a>
+
+                {% endif %}
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-md-9">
+
+        <div class="row">
+
+            {% for product in products %}
+
+            <div class="col-lg-4 col-md-6 mb-4">
+
+                <div class="card h-100">
+
+                    <img
+
+                        src="{{ product.image_url }}"
+
+                        class="card-img-top"
+
+                        style="
+                        height:220px;
+                        object-fit:contain;
+                        "
+
+                    >
+
+                    <div class="card-body">
+
+                        <h6>
+
+                            {{ product.title }}
+
+                        </h6>
+
+                        <p class="text-muted">
+
+                            {{ product.vendor }}
+
+                        </p>
+
+                        <p class="text-danger">
+
+                            {{ "{:,.0f}".format(product.price) }}
+
+                            VNĐ
+
+                        </p>
+
+                        <a
+
+                        href="/products/view/{{ product.product_id }}"
+
+                        class="btn btn-primary w-100"
+
+                        >
+
+                            Chi tiết
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% if not products %}
+
+<div class="alert alert-warning mt-4">
+
+    Không tìm thấy sản phẩm phù hợp.
+
+</div>
+
+{% endif %}
+
+<hr>
+
+<nav>
+
+<ul class="pagination justify-content-center">
+
+{% if page > 1 %}
+
+<li class="page-item">
+
+<a
+class="page-link"
+href="{{ url_for(
+'products.product_list',
+page=page-1,
+vendor=selected_vendor,
+type=selected_type,
+price=selected_price,
+sort=selected_sort
+) }}"
+>
+
+Previous
+
+</a>
+
+</li>
+
+{% endif %}
+
+{% for p in range(start_page, end_page + 1) %}
+
+<li
+class="page-item {% if p == page %}active{% endif %}"
+>
+
+<a
+
+class="page-link"
+
+href="{{ url_for(
+'products.product_list',
+page=p,
+vendor=selected_vendor,
+type=selected_type,
+price=selected_price,
+sort=selected_sort
+) }}"
+>
+
+{{ p }}
+
+</a>
+
+</li>
+
+{% endfor %}
+
+{% if page < total_pages %}
+
+<li class="page-item">
+
+<a
+
+class="page-link"
+
+href="{{ url_for(
+'products.product_list',
+page=page+1,
+vendor=selected_vendor,
+type=selected_type,
+price=selected_price,
+sort=selected_sort
+) }}"
+>
+
+Next
+
+</a>
+
+</li>
+
+{% endif %}
+
+</ul>
+
+</nav>
+
+{% endblock %}
