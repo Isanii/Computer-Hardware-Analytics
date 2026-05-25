@@ -5,7 +5,9 @@ from sqlalchemy.orm import sessionmaker
 SERVER = "DESKTOP-56H5RB4"
 
 # Database đã tạo sẵn
-DATABASE = "LinhKienMayTinh"
+#DATABASE = "LinhKienMayTinh"
+#DATABASE = "TestDb"
+DATABASE = "TestDB1"
 
 # Driver thường dùng
 DRIVER = "ODBC Driver 17 for SQL Server"
